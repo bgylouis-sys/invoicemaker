@@ -1,0 +1,400 @@
+{% extends "base.html" %}
+{% block title %}PI Maker — Proforma Invoice Generator{% endblock %}
+{% block content %}
+<form id="pi-form" method="POST" action="/generate" enctype="multipart/form-data">
+  <input type="hidden" id="item_count" name="item_count" value="0">
+  <input type="hidden" id="form-lang" name="lang" value="zh">
+
+  <!-- ══ 1. Supplier Info ════════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-header"><span class="icon">🏭</span> Supplier Info &nbsp;<span style="opacity:.7;font-weight:400">供应商信息</span></div>
+    <div class="card-body">
+      <div class="fields">
+
+        <div class="field field-full">
+          <label>Company Logo &nbsp;<span class="zh">公司标志</span></label>
+          <div class="logo-selector-wrap">
+            <div class="logo-presets" id="logo-presets">
+              {% for logo in logos %}
+              <label class="logo-option" data-filename="{{ logo.filename }}">
+                <img src="/logo/{{ logo.filename }}" alt="{{ logo.display_name }}">
+                <span>{{ logo.display_name }}</span>
+              </label>
+              {% endfor %}
+            </div>
+            <div class="logo-upload-area">
+              <div class="logo-upload-inner">
+                <div class="mini-upload-box" id="new-logo-upload-box">
+                  <input type="file" id="new_logo_input" accept="image/*">
+                  <div class="up-label"><strong>选择图片</strong><br>Choose image</div>
+                  <div id="new-logo-fname" class="logo-fname-hint">未选择</div>
+                </div>
+                <input type="text" id="new_logo_name" class="logo-name-input"
+                       placeholder="品牌名称 Brand name">
+                <button type="button" class="btn-upload-logo" id="btn-upload-logo">
+                  保存 Save
+                </button>
+              </div>
+            </div>
+          </div>
+          <input type="hidden" name="selected_logo_name" id="selected_logo_name">
+        </div>
+
+        <div class="field">
+          <label>Company Name &nbsp;<span class="zh">公司名称</span><span class="req">*</span></label>
+          <input type="text" id="company_name" name="company_name" list="company-options"
+                 placeholder="输入或选择 / Type or select" required>
+          <datalist id="company-options">
+            <option value="JINSHENG INTERNATIONAL CERAMICS">
+            <option value="JIN CHENG GLOBAL CERAMIC">
+          </datalist>
+        </div>
+
+        <div class="field">
+          <label>Address &nbsp;<span class="zh">地址</span></label>
+          <input type="text" name="address" value="Qatrana" readonly>
+        </div>
+
+        <div class="field">
+          <label>City / Country &nbsp;<span class="zh">城市/国家</span></label>
+          <input type="text" name="city_country" value="Karak, Jordan" readonly>
+        </div>
+
+        <div class="field">
+          <label>Tel &nbsp;<span class="zh">电话</span></label>
+          <input type="text" name="tel">
+        </div>
+
+        <div class="field">
+          <label>Email &nbsp;<span class="zh">邮箱</span></label>
+          <input type="email" name="email" value="capucino.jo@gmail.com">
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 2. Invoice Info ═══════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-header"><span class="icon">🔢</span> Invoice Info &nbsp;<span style="opacity:.7;font-weight:400">发票信息</span></div>
+    <div class="card-body">
+      <div class="fields">
+
+        <div class="field">
+          <label>Invoice No. &nbsp;<span class="zh">发票号</span><span class="req">*</span></label>
+          <input type="text" id="invoice_no" name="invoice_no"
+                 placeholder="e.g. INV-2026-001" required>
+        </div>
+
+        <div class="field">
+          <label>Date &nbsp;<span class="zh">日期</span></label>
+          <input type="date" name="date" id="date" value="{{ today_iso }}">
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 3. Customer Info ═══════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-header"><span class="icon">🤝</span> Customer Info &nbsp;<span style="opacity:.7;font-weight:400">客户信息</span></div>
+    <div class="card-body">
+
+      <!-- Form fields -->
+      <div class="fields">
+
+        <div class="field">
+          <label>Customer Name &nbsp;<span class="zh">客户名称</span><span class="req">*</span></label>
+          <input type="text" id="customer_name" name="customer_name"
+                 placeholder="Company / 公司名称" required>
+        </div>
+
+        <div class="field">
+          <label>Country &nbsp;<span class="zh">国家</span></label>
+          <input type="text" id="customer_country" name="country" placeholder="e.g. Jordan">
+        </div>
+
+        <div class="field">
+          <label>Customer Address &nbsp;<span class="zh">客户地址</span></label>
+          <input type="text" id="customer_address" name="customer_address" placeholder="Street, City">
+        </div>
+
+        <div class="field">
+          <label>Customer Email &nbsp;<span class="zh">客户邮箱</span></label>
+          <input type="email" id="customer_email" name="customer_email" placeholder="name@example.com">
+        </div>
+
+        <div class="field">
+          <label>Customer Tel &nbsp;<span class="zh">客户电话</span></label>
+          <input type="text" id="customer_tel" name="customer_tel" placeholder="+962-xxx-xxxx">
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══ 4. Quotation Details ═══════════════════════════════════ -->
+  <div class="card">
+    <div class="card-header"><span class="icon">📋</span> Quotation Details &nbsp;<span style="opacity:.7;font-weight:400">报价详情</span></div>
+    <div class="card-body">
+      <div class="fields cols-3">
+
+        <div class="field">
+          <label>Contact Person &nbsp;<span class="zh">联系人</span></label>
+          <div class="prefix-input-wrap">
+            <select name="contact_prefix" class="prefix-select">
+              <option value="Mr">Mr &nbsp;先生</option>
+              <option value="Ms">Ms &nbsp;女士</option>
+            </select>
+            <input type="text" name="contact_person" placeholder="Name / 姓名">
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Project / Inquiry Ref. &nbsp;<span class="zh">项目参考号</span></label>
+          <input type="text" name="inquiry_ref" placeholder="optional">
+        </div>
+
+        <div class="field">
+          <label>Currency &nbsp;<span class="zh">货币</span></label>
+          <select name="currency" id="currency">
+            <option value="JOD" selected>JOD — Jordanian Dinar</option>
+            <option value="USD">USD — US Dollar</option>
+            <option value="EUR">EUR — Euro</option>
+            <option value="CNY">CNY — Chinese Yuan</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Incoterms &nbsp;<span class="zh">贸易条款</span></label>
+          <select name="incoterms">
+            <option value="EXW">EXW — Ex Works &nbsp;工厂交货</option>
+            <option value="FOB">FOB — Free on Board &nbsp;装运港船上交货</option>
+            <option value="CIF">CIF — Cost Insurance Freight &nbsp;成本保险加运费</option>
+            <option value="CFR">CFR — Cost and Freight &nbsp;成本加运费</option>
+            <option value="DDP">DDP — Delivered Duty Paid &nbsp;完税后交货</option>
+            <option value="FCA">FCA — Free Carrier &nbsp;货交承运人</option>
+            <option value="Local">Local &nbsp;约旦本地销售</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Payment Terms &nbsp;<span class="zh">付款条件</span></label>
+          <div class="translate-wrap">
+            <input type="text" name="payment_terms" id="payment_terms"
+                   placeholder="e.g. 30% deposit… / 如：30%定金…">
+            <button type="button" class="btn-translate" id="btn-translate-payment"
+                    style="display:none" onclick="translatePaymentTerms()">
+              🌐 翻译
+            </button>
+          </div>
+          <span class="hint" id="translate-hint"></span>
+        </div>
+
+        <div class="field">
+          <label>Lead Time &nbsp;<span class="zh">总体交货期</span></label>
+          <input type="text" name="lead_time" placeholder="e.g. 45 days">
+        </div>
+
+        <div class="field">
+          <label>Quotation Validity &nbsp;<span class="zh">有效期（天）</span></label>
+          <input type="number" id="quotation_validity" name="quotation_validity"
+                 min="1" placeholder="e.g. 30">
+          <span class="hint" id="validity-hint">输入天数后自动同步到备注第4条</span>
+        </div>
+
+        <div class="field">
+          <label>Port of Loading &nbsp;<span class="zh">装运港</span></label>
+          <input type="text" name="port_of_loading" value="Aqaba">
+        </div>
+
+        <div class="field">
+          <label>Destination &nbsp;<span class="zh">目的地</span></label>
+          <input type="text" name="destination" placeholder="City, Country">
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 5. Item List ═══════════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-header"><span class="icon">📦</span> Item List &nbsp;<span style="opacity:.7;font-weight:400">商品明细</span></div>
+    <div class="card-body">
+
+      <!-- Product Library -->
+      <div class="product-library" id="product-library">
+        <div class="library-header">
+          <span>产品库 &nbsp;Product Library</span>
+          <select id="product-project-filter" class="project-filter">
+            <option value="">全部项目 / All Projects</option>
+            <option value="卫浴">卫浴 / Sanitary Ware</option>
+            <option value="LED灯具">LED灯具 / LED Lighting</option>
+            <option value="不锈钢">不锈钢 / Stainless Steel</option>
+            <option value="床垫">床垫 / Mattress</option>
+            <option value="纸箱">纸箱 / Carton</option>
+            <option value="瓷砖胶">瓷砖胶 / Tile Adhesive</option>
+            <option value="浴室柜">浴室柜 / Bathroom Cabinet</option>
+            <option value="瓷砖">瓷砖 / Ceramic Tile</option>
+            <option value="注塑">注塑 / Injection Molding</option>
+            <option value="钢铁厂">钢铁厂 / Steel Plant</option>
+            <option value="造纸厂">造纸厂 / Paper Mill</option>
+          </select>
+          <span id="product-count" class="library-count"></span>
+        </div>
+        <div id="product-cards" class="product-cards">
+          <div class="no-products-msg">暂无保存的产品 / No saved products</div>
+        </div>
+      </div>
+
+      <div id="items-container" style="margin-top:14px"></div>
+      <button type="button" class="btn-add" onclick="addItem()" style="margin-top:10px">
+        ＋ &nbsp;添加商品行 &nbsp;/&nbsp; Add Item
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ 6. Summary ════════════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-header"><span class="icon">💰</span> Summary &nbsp;<span style="opacity:.7;font-weight:400">金额汇总</span></div>
+    <div class="card-body">
+      <div class="summary-grid">
+
+        <div class="field field-full">
+          <label>Freight / Additional Charges &nbsp;<span class="zh">运费/附加费</span></label>
+          <input type="number" id="freight" name="freight" value="0" min="0" step="0.01">
+        </div>
+
+        <div class="subtotal-row">
+          <span>Subtotal 小计</span>
+          <span><span id="display-subtotal">0.00</span> &nbsp;<span class="currency-label">JOD</span></span>
+        </div>
+
+        <div class="summary-total">
+          <span class="lbl">GRAND TOTAL 总计</span>
+          <span class="val"><span id="display-grand">0.00</span> &nbsp;<span class="currency-label">JOD</span></span>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 7. Signing ════════════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-header"><span class="icon">✍️</span> Signing &nbsp;<span style="opacity:.7;font-weight:400">签署</span></div>
+    <div class="card-body">
+      <div class="fields">
+        <div class="field">
+          <label>Signing Date &nbsp;<span class="zh">签署日期</span></label>
+          <input type="text" name="sign_date" id="sign_date" value="{{ today }}"
+                 placeholder="YYYY.M.D">
+          <span class="hint">留空则使用发票日期 / Leave blank to use invoice date</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ Generate ═══════════════════════════════════════════════ -->
+  <div class="generate-wrap">
+    <button type="submit" id="btn-generate" class="btn-generate">
+      <span class="spinner"></span>
+      <span class="btn-text">⬇ &nbsp;生成并下载 Excel（中英文）&nbsp;/&nbsp; Generate &amp; Download (CN+EN)</span>
+    </button>
+    <button type="button" id="btn-export-pdf" class="btn-pdf" onclick="exportPDF()">
+      🖨 &nbsp;导出 PDF（中英文）&nbsp;/&nbsp; Export PDF (CN+EN)
+    </button>
+  </div>
+
+  <div class="generate-wrap" style="margin-top:10px">
+    <button type="button" id="btn-generate-ar" class="btn-generate" onclick="generateAR()">
+      <span class="spinner"></span>
+      <span class="btn-text">⬇ &nbsp;生成并下载 Excel（英文阿文）&nbsp;/&nbsp; Generate &amp; Download (EN+AR)</span>
+    </button>
+    <button type="button" id="btn-export-pdf-ar" class="btn-pdf" onclick="exportPDFAR()">
+      🖨 &nbsp;导出 PDF（英文阿文）&nbsp;/&nbsp; Export PDF (EN+AR)
+    </button>
+  </div>
+
+</form>
+
+<!-- ══ Item row template (cloned by JS) ══════════════════════ -->
+<template id="item-template">
+  <div class="item-card" data-amount="0">
+    <div class="item-card-header">
+      <span class="item-num">Item #1</span>
+      <div class="item-header-actions">
+        <button type="button" class="btn-save-product">📌 加入产品库</button>
+        <button type="button" class="btn-remove">✕ 删除</button>
+      </div>
+    </div>
+    <div class="item-card-body">
+
+      <div class="field" style="grid-column:span 2">
+        <label data-for="item_desc">Product Description &nbsp;<span class="zh">产品描述</span></label>
+        <input type="text" data-fname="item_desc" placeholder="e.g. Wall-hung Toilet">
+      </div>
+
+      <div class="field">
+        <label data-for="item_model">Model No. &nbsp;<span class="zh">型号</span></label>
+        <input type="text" data-fname="item_model" placeholder="e.g. CP-3011">
+      </div>
+
+      <div class="field">
+        <label data-for="item_color">Color / Finish &nbsp;<span class="zh">颜色/表面</span></label>
+        <input type="text" data-fname="item_color" placeholder="e.g. White / Matt">
+      </div>
+
+      <div class="field">
+        <label data-for="item_size">Size &nbsp;<span class="zh">尺寸</span></label>
+        <input type="text" data-fname="item_size" placeholder="e.g. 515×350×315 mm">
+      </div>
+
+      <div class="field">
+        <label data-for="item_unit">Unit &nbsp;<span class="zh">单位</span></label>
+        <select data-fname="item_unit">
+          <option value="Set">Set 套</option>
+          <option value="m²">m² 平方米</option>
+          <option value="Pcs">Pcs 个/件</option>
+          <option value="Carton Box">Carton Box 箱</option>
+          <option value="Ton">Ton 吨</option>
+          <option value="Bag">Bag 袋</option>
+          <option value="m">m 米</option>
+          <option value="kg">kg 千克</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label data-for="item_qty">Qty &nbsp;<span class="zh">数量</span></label>
+        <input type="number" data-fname="item_qty" min="0" step="1" placeholder="0">
+      </div>
+
+      <div class="field" style="grid-column:span 2">
+        <label data-for="item_price">Unit Price &nbsp;<span class="zh">单价</span></label>
+        <div class="price-tax-wrap">
+          <input type="number" data-fname="item_price" min="0" step="0.01" placeholder="0.00">
+          <select data-fname="item_tax" class="tax-select">
+            <option value="excl">不含税 Excl. Tax</option>
+            <option value="incl">含16%消费税 Incl. GST</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label data-for="item_remarks">Remarks &nbsp;<span class="zh">备注</span></label>
+        <input type="text" data-fname="item_remarks" value="/">
+      </div>
+
+      <div class="item-amount-display">
+        <span>Amount 金额：</span>
+        <span class="amt-val">0.00</span>
+        <span class="currency-label">JOD</span>
+      </div>
+
+    </div>
+  </div>
+</template>
+{% endblock %}
+{% block scripts %}
+<script src="/static/script.js"></script>
+{% endblock %}

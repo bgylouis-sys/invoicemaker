@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PI — {{ invoice_no }}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    @page { size: A4 portrait; margin: 8mm; }
+
+    body {
+      font-family: Arial, 'Microsoft YaHei', sans-serif;
+      font-size: 12px;
+      color: #000;
+      background: #fff;
+    }
+
+    .toolbar {
+      position: fixed; top: 0; left: 0; right: 0;
+      background: #000; color: #fff;
+      padding: 8px 16px; display: flex; gap: 10px; align-items: center;
+      z-index: 999; box-shadow: 0 2px 6px rgba(0,0,0,.25);
+    }
+    .toolbar button {
+      background: #fff; color: #000; border: 1px solid #000; border-radius: 4px;
+      padding: 5px 14px; font-size: 12px; font-weight: 700; cursor: pointer;
+    }
+    .toolbar button:hover { background: #eee; }
+    .toolbar span { font-size: 13px; font-weight: 700; }
+    @media print { .toolbar { display: none !important; } body { padding-top: 0 !important; } }
+    body.has-toolbar { padding-top: 44px; }
+
+    .sheet { max-width: 194mm; margin: 0 auto; background: #fff; }
+
+    .inv {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+    .inv td, .inv th {
+      border: 1px solid #000;
+      padding: 4px 6px;
+      vertical-align: middle;
+      overflow: hidden;
+      word-break: break-word;
+      line-height: 1.3;
+      font-size: 12px;
+      color: #000;
+      background: #fff;
+    }
+
+    /* Column widths — K(Packing) L(MOQ) M(Lead Time) D(Picture) removed */
+    .inv col.cA { width: 3.33%;  }
+    .inv col.cB { width: 26.67%; }
+    .inv col.cC { width: 9.17%;  }
+    .inv col.cD { width: 0; }
+    .inv col.cE { width: 9.17%; }
+    .inv col.cF { width: 9.17%;  }
+    .inv col.cG { width: 6.67%;  }
+    .inv col.cH { width: 5.83%;  }
+    .inv col.cI { width: 10.00%; }
+    .inv col.cJ { width: 10.00%; }
+    .inv col.cK { width: 0; }
+    .inv col.cL { width: 0; }
+    .inv col.cM { width: 0; }
+    .inv col.cN { width: 10.00%; }
+
+    /* Permanently removed item columns */
+    .col-rm {
+      padding: 0 !important; border: none !important;
+      overflow: hidden; max-width: 0 !important; min-width: 0 !important;
+    }
+
+    .r-logo  { height: 32px; }
+    .r-bar   { height: 22px; }
+    .r-info  { height: 22px; }
+    .r-itemh { height: 28px; }
+    .r-item  { height: 42px; }
+    .r-sum   { height: 22px; }
+    .r-grand { height: 30px; }
+    .r-rmk   { height: 18px; }
+    .r-bank  { height: 22px; }
+    
+    .r-stamp { height: 36px; }
+
+    /* Section header bar — white bg, black text, thick borders */
+    .sh {
+      font-weight: 800;
+      font-size: 14px;
+      letter-spacing: .8px;
+      text-align: center;
+      padding: 5px 6px;
+      border: 2px solid #000 !important;
+    }
+
+    /* Field label / value */
+    .lbl {
+      font-weight: 600;
+      font-size: 12px;
+      padding-left: 8px;
+      text-align: left;
+      white-space: nowrap;
+    }
+    .val {
+      font-weight: 700;
+      font-size: 13px;
+      padding-left: 8px;
+      text-align: left;
+    }
+
+    /* Logo cell */
+    .logo-cell {
+      text-align: center;
+      vertical-align: middle;
+      padding: 4px;
+    }
+    .logo-cell img { max-width: 95%; max-height: 64px; object-fit: contain; }
+    .logo-cell .ph { color: #888; font-style: italic; font-size: 12px; }
+
+    /* Title cell */
+    .title-cell { text-align: center; vertical-align: middle; }
+    .pi-title {
+      font-size: 32px; font-weight: 800; color: #000;
+      letter-spacing: 5px; line-height: 1.1;
+    }
+
+    /* Item table header */
+    .item-th {
+      font-weight: 800;
+      font-size: 11px;
+      text-align: center;
+      vertical-align: middle;
+      padding: 4px 3px;
+      border: 2px solid #000 !important;
+    }
+
+    /* Item data cells */
+    .item-td {
+      text-align: center;
+      vertical-align: middle;
+      font-size: 11px;
+      padding: 3px 4px;
+      color: #000;
+    }
+    .item-td.left { text-align: left; }
+    .item-td.num  { text-align: right; padding-right: 6px; }
+
+
+    /* Summary */
+    .sum-lbl {
+      font-weight: 600;
+      text-align: left;
+      padding-left: 8px;
+      font-size: 12px;
+    }
+    .sum-val {
+      font-weight: 700;
+      text-align: right;
+      padding-right: 8px;
+      font-size: 13px;
+    }
+    .grand-lbl {
+      font-weight: 800;
+      text-align: center;
+      font-size: 15px;
+      letter-spacing: .8px;
+      border: 2.5px solid #000 !important;
+    }
+    .grand-val {
+      font-weight: 800;
+      text-align: right;
+      padding-right: 8px;
+      font-size: 16px;
+      border: 2.5px solid #000 !important;
+    }
+    .grand-cur {
+      font-weight: 800;
+      text-align: center;
+      font-size: 13px;
+      border: 2.5px solid #000 !important;
+    }
+    .grand-empty { border: 2.5px solid #000 !important; }
+
+    /* Fixed text */
+    .fixed-text {
+      font-size: 11px;
+      padding: 3px 8px;
+      text-align: left;
+      line-height: 1.4;
+      color: #000;
+    }
+
+    /* Sign cells */
+    .sign-cell {
+      vertical-align: top;
+      padding: 6px 8px;
+      font-size: 11px;
+      color: #444;
+    }
+    .sign-cell .lbl-text { font-weight: 600; color: #000; }
+
+  </style>
+</head>
+<body class="has-toolbar">
+
+<div class="toolbar">
+  <span>📄 PI Preview — {{ invoice_no }}</span>
+  <button onclick="window.print()">🖨 打印 / 保存为 PDF</button>
+  <button onclick="window.close()">✕ 关闭</button>
+</div>
+
+<div class="sheet">
+<table class="inv">
+  <colgroup>
+    <col class="cA"><col class="cB">
+    <col class="cC"><col class="cD"><col class="cE"><col class="cF">
+    <col class="cG"><col class="cH"><col class="cI"><col class="cJ">
+    <col class="cK"><col class="cL"><col class="cM"><col class="cN">
+  </colgroup>
+
+  <!-- ROWS 1-2: Logo + Title -->
+  <tr class="r-logo">
+    <td colspan="4" rowspan="2" class="logo-cell">
+      {% if logo_b64 %}
+        <img src="data:{{ logo_mime }};base64,{{ logo_b64 }}" alt="logo">
+      {% else %}
+        <span class="ph">[ Insert Company Logo ]</span>
+      {% endif %}
+    </td>
+    <td colspan="10" rowspan="2" class="title-cell">
+      <div class="pi-title">PROFORMA INVOICE</div>
+    </td>
+  </tr>
+  <tr class="r-logo"></tr>
+
+  <!-- ROW 3: Section bars -->
+  <tr class="r-bar">
+    <td colspan="6" class="sh">FROM / SUPPLIER &nbsp; 供货商</td>
+    <td colspan="8" class="sh">INVOICE INFO &nbsp; 发票信息</td>
+  </tr>
+
+  <!-- ROW 4-8: Supplier left | Invoice info + key terms right -->
+  <tr class="r-info">
+    <td colspan="2" class="lbl">Company Name:</td>
+    <td colspan="4" class="val">{{ company_name }}</td>
+    <td colspan="3" class="lbl">Invoice No.:</td>
+    <td colspan="5" class="val">{{ invoice_no }}</td>
+  </tr>
+  <tr class="r-info">
+    <td colspan="2" class="lbl">Address:</td>
+    <td colspan="4" class="val">{{ address }}</td>
+    <td colspan="3" class="lbl">Date:</td>
+    <td colspan="5" class="val">{{ date_str }}</td>
+  </tr>
+  <tr class="r-info">
+    <td colspan="2" class="lbl">City / Country:</td>
+    <td colspan="4" class="val">{{ city_country }}</td>
+    <td colspan="3" class="lbl">Currency:</td>
+    <td colspan="5" class="val">{{ currency }}</td>
+  </tr>
+  <tr class="r-info">
+    <td colspan="2" class="lbl">Tel:</td>
+    <td colspan="4" class="val">{{ tel }}</td>
+    <td colspan="3" class="lbl">Incoterms:</td>
+    <td colspan="5" class="val">{{ incoterms }}</td>
+  </tr>
+  <tr class="r-info">
+    <td colspan="2" class="lbl">Email:</td>
+    <td colspan="4" class="val">{{ email }}</td>
+    <td colspan="3" class="lbl">Payment Terms:</td>
+    <td colspan="5" class="val">{{ payment_terms }}</td>
+  </tr>
+
+  <!-- ROW 9: Customer + Quotation Details bars -->
+  <tr class="r-bar">
+    <td colspan="6" class="sh">TO / CUSTOMER &nbsp; 客户</td>
+    <td colspan="8" class="sh">QUOTATION DETAILS &nbsp; 报价详情</td>
+  </tr>
+
+  <!-- ROWS 10-14 -->
+  <tr class="r-info">
+    <td colspan="2" class="lbl">Customer Name:</td>
+    <td colspan="4" class="val">{{ customer_name }}</td>
+    <td colspan="3" class="lbl">Contact Person:</td>
+    <td colspan="5" class="val">{{ contact }}</td>
+  </tr>
+  <tr class="r-info">
+    <td colspan="2" class="lbl">Customer Address:</td>
+    <td colspan="4" class="val">{{ customer_address }}</td>
+    <td colspan="3" class="lbl">Project / Inquiry Ref.:</td>
+    <td colspan="5" class="val">{{ inquiry_ref }}</td>
+  </tr>
+  <tr class="r-info">
+    <td colspan="2" class="lbl">Customer Email:</td>
+    <td colspan="4" class="val">{{ customer_email }}</td>
+    <td colspan="3" class="lbl">Lead Time:</td>
+    <td colspan="5" class="val">{{ lead_time }}</td>
+  </tr>
+  <tr class="r-info">
+    <td colspan="2" class="lbl">Country:</td>
+    <td colspan="4" class="val">{{ country }}</td>
+    <td colspan="3" class="lbl">Quotation Validity:</td>
+    <td colspan="5" class="val">{% if validity %}{{ validity }} days{% endif %}</td>
+  </tr>
+  <tr class="r-info">
+    <td colspan="2" class="lbl">Customer Tel:</td>
+    <td colspan="4" class="val">{{ customer_tel }}</td>
+    <td colspan="3" class="lbl">Shipping (Port→Dest):</td>
+    <td colspan="5" class="val">{{ shipping }}</td>
+  </tr>
+
+  <!-- ITEM LIST bar -->
+  <tr class="r-bar">
+    <td colspan="14" class="sh">ITEM LIST &nbsp; 商品明细</td>
+  </tr>
+
+  <!-- Item table headers -->
+  <tr class="r-itemh">
+    <th class="item-th">Item<br>No.</th>
+    <th class="item-th">Product Description</th>
+    <th class="item-th">Model No.</th>
+    <th class="col-rm"></th>
+    <th class="item-th">Color/Finish</th>
+    <th class="item-th">Size</th>
+    <th class="item-th">Unit</th>
+    <th class="item-th">Qty</th>
+    <th class="item-th">Unit Price</th>
+    <th class="item-th">Amount</th>
+    <th class="col-rm"></th>
+    <th class="col-rm"></th>
+    <th class="col-rm"></th>
+    <th class="item-th">Remarks</th>
+  </tr>
+
+  <!-- Items: only as many rows as actual items, no empty padding -->
+  {% for it in items %}
+  <tr class="r-item">
+    <td class="item-td">{{ it.no }}</td>
+    <td class="item-td left">{{ it.desc }}</td>
+    <td class="item-td">{{ it.model }}</td>
+    <td class="col-rm"></td>
+    <td class="item-td">{{ it.color }}</td>
+    <td class="item-td">{{ it.size }}</td>
+    <td class="item-td">{{ it.unit }}</td>
+    <td class="item-td num">{{ it.qty | int if it.qty == (it.qty | int) else it.qty }}</td>
+    <td class="item-td num">{{ "%.2f" | format(it.price) }}</td>
+    <td class="item-td num">{{ "%.2f" | format(it.amount) }}</td>
+    <td class="col-rm"></td>
+    <td class="col-rm"></td>
+    <td class="col-rm"></td>
+    <td class="item-td left">{{ it.remarks }}</td>
+  </tr>
+  {% endfor %}
+
+  <!-- Subtotal -->
+  <tr class="r-sum">
+    <td colspan="6"></td>
+    <td colspan="3" class="sum-lbl">Subtotal:</td>
+    <td colspan="5" class="sum-val">{{ "%.2f" | format(subtotal) }}</td>
+  </tr>
+  <!-- Freight -->
+  <tr class="r-sum">
+    <td colspan="6"></td>
+    <td colspan="3" class="sum-lbl">Freight / Additional Charges:</td>
+    <td colspan="5" class="sum-val">{{ "%.2f" | format(freight) }}</td>
+  </tr>
+  <!-- GRAND TOTAL -->
+  <tr class="r-grand">
+    <td colspan="6" class="grand-empty"></td>
+    <td colspan="3" class="grand-lbl">GRAND TOTAL:</td>
+    <td colspan="4" class="grand-val">{{ "%.2f" | format(grand) }}</td>
+    <td class="grand-cur">{{ currency }}</td>
+  </tr>
+
+  <!-- REMARKS -->
+  <tr class="r-bar">
+    <td colspan="14" class="sh">REMARKS &nbsp; 备注</td>
+  </tr>
+  <tr class="r-rmk"><td colspan="14" class="fixed-text">1.&nbsp; The above prices are based on the stated quantity and specifications only.</td></tr>
+  <tr class="r-rmk"><td colspan="14" class="fixed-text">2.&nbsp; Prices may be adjusted if there is any change in quantity, specification, packaging, or surface finish.</td></tr>
+  <tr class="r-rmk"><td colspan="14" class="fixed-text">3.&nbsp; Standard export packing is included unless otherwise specified.</td></tr>
+  <tr class="r-rmk"><td colspan="14" class="fixed-text">4.&nbsp; This quotation is valid for <strong>{{ validity if validity else '___' }}</strong> days from the date of issue.</td></tr>
+  <tr class="r-rmk"><td colspan="14" class="fixed-text">5.&nbsp; Final supply terms shall be subject to order confirmation.</td></tr>
+
+  <!-- TRANSFER DETAILS -->
+  <tr class="r-bar">
+    <td colspan="14" class="sh">TRANSFER DETAILS &nbsp; 转账信息</td>
+  </tr>
+  <tr class="r-bank">
+    <td colspan="2" class="lbl">Beneficiary:</td>
+    <td colspan="5" class="val">Jinsheng International Ceramics</td>
+    <td colspan="2" class="lbl">Bank:</td>
+    <td colspan="5" class="val">Bank al Etihad</td>
+  </tr>
+  <tr class="r-bank">
+    <td colspan="2" class="lbl">SWIFT:</td>
+    <td colspan="5" class="val">UBSIJOAX</td>
+    <td colspan="2" class="lbl">Account:</td>
+    <td colspan="5" class="val">0250193398615101</td>
+  </tr>
+  <tr class="r-bank">
+    <td colspan="2" class="lbl">IBAN:</td>
+    <td colspan="12" class="val">JO26 UBSI 1150 0002 5019 3398 6151 01</td>
+  </tr>
+  <tr class="r-bank">
+    <td colspan="2" class="lbl">Bank Address:</td>
+    <td colspan="12" class="val">Bank al Etihad, Al Shmaisani, Headquarters, Amman, Jordan</td>
+  </tr>
+
+  <!-- Stamp -->
+  <tr class="r-stamp">
+    <td colspan="14" class="sign-cell">Company Stamp 公司印章:</td>
+  </tr>
+
+</table>
+</div>
+
+<script>
+  window.addEventListener('load', () => setTimeout(() => window.print(), 350));
+</script>
+</body>
+</html>

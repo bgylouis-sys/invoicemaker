@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}JINCHENG Document Maker{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+<div class="topbar">
+  <span class="topbar-icon">📄</span>
+  <h1>JINCHENG Document Maker <small>金城单证制作器</small></h1>
+</div>
+
+<nav class="navbar">
+  <a href="/" class="nav-tab {% if active_tab == 'pi-maker' %}active{% endif %}">PI Maker<span class="zh">形式发票制作</span></a>
+  <a href="/pl-maker" class="nav-tab {% if active_tab == 'pl-maker' %}active{% endif %}">PL Maker<span class="zh">包装单制作</span></a>
+  <a href="/quotation-maker" class="nav-tab {% if active_tab == 'quotation-maker' %}active{% endif %}">Quotation Maker<span class="zh">报价单制作</span></a>
+  <a href="/jincheng-invoice" class="nav-tab {% if active_tab == 'jincheng-invoice' %}active{% endif %}">JINCHENG Invoice<span class="zh">金城含税发票申请</span></a>
+</nav>
+
+<div class="page">
+  {% block content %}{% endblock %}
+</div>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

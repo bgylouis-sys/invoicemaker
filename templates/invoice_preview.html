@@ -6,7 +6,7 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    @page { size: A4 portrait; margin: 8mm; }
+    @page { size: A4 {% if is_led %}landscape{% else %}portrait{% endif %}; margin: 8mm; }
 
     body {
       font-family: Arial, 'Microsoft YaHei', sans-serif;
@@ -30,7 +30,7 @@
     @media print { .toolbar { display: none !important; } body { padding-top: 0 !important; } }
     body.has-toolbar { padding-top: 44px; }
 
-    .sheet { max-width: 194mm; margin: 0 auto; background: #fff; }
+    .sheet { max-width: {% if is_led %}270mm{% else %}194mm{% endif %}; margin: 0 auto; background: #fff; }
 
     .inv {
       width: 100%;
@@ -51,19 +51,19 @@
 
     /* Column widths — K(Packing) L(MOQ) M(Lead Time) D(Picture) removed */
     .inv col.cA { width: 3.33%;  }
-    .inv col.cB { width: 26.67%; }
+    .inv col.cB { width: {% if is_led %}29.0{% else %}26.67{% endif %}%; }
     .inv col.cC { width: 9.17%;  }
-    .inv col.cD { width: 0; }
-    .inv col.cE { width: 9.17%; }
-    .inv col.cF { width: 9.17%;  }
-    .inv col.cG { width: 6.67%;  }
-    .inv col.cH { width: 5.83%;  }
-    .inv col.cI { width: 10.00%; }
-    .inv col.cJ { width: 10.00%; }
-    .inv col.cK { width: 0; }
-    .inv col.cL { width: 0; }
-    .inv col.cM { width: 0; }
-    .inv col.cN { width: 10.00%; }
+    .inv col.cD { width: {% if is_led %}8.5{% else %}0{% endif %}%; }
+    .inv col.cE { width: {% if is_led %}7.5{% else %}9.17{% endif %}%; }
+    .inv col.cF { width: {% if is_led %}7.5{% else %}9.17{% endif %}%;  }
+    .inv col.cG { width: {% if is_led %}5.5{% else %}6.67{% endif %}%;  }
+    .inv col.cH { width: {% if is_led %}5.0{% else %}5.83{% endif %}%;  }
+    .inv col.cI { width: {% if is_led %}9.0{% else %}10.00{% endif %}%; }
+    .inv col.cJ { width: {% if is_led %}9.0{% else %}10.00{% endif %}%; }
+    .inv col.cK { width: {% if is_led %}7.5{% else %}0{% endif %}%; }
+    .inv col.cL { width: {% if is_led %}7.5{% else %}0{% endif %}%; }
+    .inv col.cM { width: {% if is_led %}7.5{% else %}0{% endif %}%; }
+    .inv col.cN { width: {% if is_led %}8.0{% else %}10{% endif %}%; }
 
     /* Permanently removed item columns */
     .col-rm {
@@ -319,16 +319,28 @@
     <th class="item-th">Item<br>No.</th>
     <th class="item-th">Product Description</th>
     <th class="item-th">Model No.</th>
+    {% if is_led %}
+    <th class="item-th">Material</th>
+    <th class="item-th">Dia / Shape</th>
+    <th class="item-th">Lumin (lm)</th>
+    {% else %}
     <th class="col-rm"></th>
     <th class="item-th">Color/Finish</th>
     <th class="item-th">Size</th>
+    {% endif %}
     <th class="item-th">Unit</th>
     <th class="item-th">Qty</th>
     <th class="item-th">Unit Price</th>
     <th class="item-th">Amount</th>
+    {% if is_led %}
+    <th class="item-th">Voltage</th>
+    <th class="item-th">Power</th>
+    <th class="item-th">Color Temp</th>
+    {% else %}
     <th class="col-rm"></th>
     <th class="col-rm"></th>
     <th class="col-rm"></th>
+    {% endif %}
     <th class="item-th">Remarks</th>
   </tr>
 
@@ -338,16 +350,28 @@
     <td class="item-td">{{ it.no }}</td>
     <td class="item-td left">{{ it.desc }}</td>
     <td class="item-td">{{ it.model }}</td>
+    {% if it.is_led %}
+    <td class="item-td">{{ it.material }}</td>
+    <td class="item-td">{{ it.dia_shape }}</td>
+    <td class="item-td">{{ it.lumin+'lm' if it.lumin else '' }}</td>
+    {% else %}
     <td class="col-rm"></td>
     <td class="item-td">{{ it.color }}</td>
     <td class="item-td">{{ it.size }}</td>
+    {% endif %}
     <td class="item-td">{{ it.unit }}</td>
     <td class="item-td num">{{ it.qty | int if it.qty == (it.qty | int) else it.qty }}</td>
     <td class="item-td num">{{ "%.2f" | format(it.price) }}</td>
     <td class="item-td num">{{ "%.2f" | format(it.amount) }}</td>
+    {% if it.is_led %}
+    <td class="item-td">{{ it.voltage+'V' if it.voltage else '' }}</td>
+    <td class="item-td">{{ it.power+'W' if it.power else '' }}</td>
+    <td class="item-td">{{ it.color_temp+'K' if it.color_temp else '' }}</td>
+    {% else %}
     <td class="col-rm"></td>
     <td class="col-rm"></td>
     <td class="col-rm"></td>
+    {% endif %}
     <td class="item-td left">{{ it.remarks }}</td>
   </tr>
   {% endfor %}
@@ -376,11 +400,18 @@
   <tr class="r-bar">
     <td colspan="14" class="sh">REMARKS &nbsp; 备注</td>
   </tr>
+  {% if is_led %}
+  <tr class="r-rmk"><td colspan="14" class="fixed-text">1.&nbsp; The above prices are ex-factory prices.</td></tr>
+  <tr class="r-rmk"><td colspan="14" class="fixed-text">2.&nbsp; Delivery time: {{ led_delivery_months }} months after receipt of {{ led_deposit_pct }}% deposit.</td></tr>
+  <tr class="r-rmk"><td colspan="14" class="fixed-text">3.&nbsp; The remaining: {{ led_remaining_pct }}% Will be paid upon delivery.</td></tr>
+  <tr class="r-rmk"><td colspan="14" class="fixed-text">4.&nbsp; Warranty: Bulb-1year.</td></tr>
+  {% else %}
   <tr class="r-rmk"><td colspan="14" class="fixed-text">1.&nbsp; The above prices are based on the stated quantity and specifications only.</td></tr>
   <tr class="r-rmk"><td colspan="14" class="fixed-text">2.&nbsp; Prices may be adjusted if there is any change in quantity, specification, packaging, or surface finish.</td></tr>
   <tr class="r-rmk"><td colspan="14" class="fixed-text">3.&nbsp; Standard export packing is included unless otherwise specified.</td></tr>
   <tr class="r-rmk"><td colspan="14" class="fixed-text">4.&nbsp; This quotation is valid for <strong>{{ validity if validity else '___' }}</strong> days from the date of issue.</td></tr>
   <tr class="r-rmk"><td colspan="14" class="fixed-text">5.&nbsp; Final supply terms shall be subject to order confirmation.</td></tr>
+  {% endif %}
 
   <!-- TRANSFER DETAILS -->
   <tr class="r-bar">
@@ -388,23 +419,23 @@
   </tr>
   <tr class="r-bank">
     <td colspan="2" class="lbl">Beneficiary:</td>
-    <td colspan="5" class="val">Jinsheng International Ceramics</td>
+    <td colspan="5" class="val">{{ bank.beneficiary if bank else 'Jinsheng International Ceramics' }}</td>
     <td colspan="2" class="lbl">Bank:</td>
-    <td colspan="5" class="val">Bank al Etihad</td>
+    <td colspan="5" class="val">{{ bank.bank if bank else 'Bank al Etihad' }}</td>
   </tr>
   <tr class="r-bank">
     <td colspan="2" class="lbl">SWIFT:</td>
-    <td colspan="5" class="val">UBSIJOAX</td>
+    <td colspan="5" class="val">{{ bank.swift if bank else 'UBSIJOAX' }}</td>
     <td colspan="2" class="lbl">Account:</td>
-    <td colspan="5" class="val">0250193398615101</td>
+    <td colspan="5" class="val">{{ bank.account if bank else '0250193398615101' }}</td>
   </tr>
   <tr class="r-bank">
     <td colspan="2" class="lbl">IBAN:</td>
-    <td colspan="12" class="val">JO26 UBSI 1150 0002 5019 3398 6151 01</td>
+    <td colspan="12" class="val">{{ bank.iban if bank else 'JO26 UBSI 1150 0002 5019 3398 6151 01' }}</td>
   </tr>
   <tr class="r-bank">
     <td colspan="2" class="lbl">Bank Address:</td>
-    <td colspan="12" class="val">Bank al Etihad, Al Shmaisani, Headquarters, Amman, Jordan</td>
+    <td colspan="12" class="val">{{ bank.bank_address if bank else 'Bank al Etihad, Al Shmaisani, Headquarters, Amman, Jordan' }}</td>
   </tr>
 
   <!-- Stamp -->
@@ -416,7 +447,25 @@
 </div>
 
 <script>
-  window.addEventListener('load', () => setTimeout(() => window.print(), 350));
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      const sheet = document.querySelector('.sheet');
+      if (sheet) {
+        // A4 landscape: 210mm - 16mm margins = 194mm ≈ 733px at 96dpi
+        // A4 portrait:  297mm - 16mm margins = 281mm ≈ 1063px
+        const isLandscape = {{ 'true' if is_led else 'false' }};
+        const printableHeightPx = isLandscape ? 733 : 1063;
+        const contentHeight = sheet.scrollHeight;
+        if (contentHeight > printableHeightPx) {
+          const scale = printableHeightPx / contentHeight;
+          sheet.style.transform = `scale(${scale})`;
+          sheet.style.transformOrigin = 'top left';
+          sheet.style.marginBottom = `${-(contentHeight * (1 - scale))}px`;
+        }
+      }
+      window.print();
+    }, 350);
+  });
 </script>
 </body>
 </html>

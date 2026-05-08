@@ -220,27 +220,32 @@
 
   <!-- ══ 5. Item List ═══════════════════════════════════════════ -->
   <div class="card">
-    <div class="card-header"><span class="icon">📦</span> Item List &nbsp;<span style="opacity:.7;font-weight:400">商品明细</span></div>
+    <div class="card-header"><span class="icon">📦</span> Item List &nbsp;<span style="opacity:.7;font-weight:400">商品明细</span>
+      <span style="margin-left:auto;display:flex;align-items:center;gap:6px">
+        <label style="font-size:12px;font-weight:600;white-space:nowrap">项目 Project:</label>
+        <select name="project" id="global-project-select" class="project-filter" style="font-size:12px;min-width:180px">
+          <option value="">-- 选择项目 / Select Project --</option>
+          <option value="卫浴">卫浴 / Sanitary Ware</option>
+          <option value="LED灯具">LED灯具 / LED Lighting</option>
+          <option value="不锈钢">不锈钢 / Stainless Steel</option>
+          <option value="床垫">床垫 / Mattress</option>
+          <option value="纸箱">纸箱 / Carton</option>
+          <option value="瓷砖胶">瓷砖胶 / Tile Adhesive</option>
+          <option value="浴室柜">浴室柜 / Bathroom Cabinet</option>
+          <option value="瓷砖">瓷砖 / Ceramic Tile</option>
+          <option value="注塑">注塑 / Injection Molding</option>
+          <option value="钢铁厂">钢铁厂 / Steel Plant</option>
+          <option value="造纸厂">造纸厂 / Paper Mill</option>
+        </select>
+      </span>
+    </div>
     <div class="card-body">
 
       <!-- Product Library -->
       <div class="product-library" id="product-library">
         <div class="library-header">
           <span>产品库 &nbsp;Product Library</span>
-          <select id="product-project-filter" class="project-filter">
-            <option value="">全部项目 / All Projects</option>
-            <option value="卫浴">卫浴 / Sanitary Ware</option>
-            <option value="LED灯具">LED灯具 / LED Lighting</option>
-            <option value="不锈钢">不锈钢 / Stainless Steel</option>
-            <option value="床垫">床垫 / Mattress</option>
-            <option value="纸箱">纸箱 / Carton</option>
-            <option value="瓷砖胶">瓷砖胶 / Tile Adhesive</option>
-            <option value="浴室柜">浴室柜 / Bathroom Cabinet</option>
-            <option value="瓷砖">瓷砖 / Ceramic Tile</option>
-            <option value="注塑">注塑 / Injection Molding</option>
-            <option value="钢铁厂">钢铁厂 / Steel Plant</option>
-            <option value="造纸厂">造纸厂 / Paper Mill</option>
-          </select>
+          <span class="library-hint" style="font-size:11px;color:var(--gray-txt);font-weight:400">选择商品项目后筛选 / Filtered by item project</span>
           <span id="product-count" class="library-count"></span>
         </div>
         <div id="product-cards" class="product-cards">
@@ -295,6 +300,103 @@
     </div>
   </div>
 
+  <!-- ══ 8. LED Remarks (visible only for LED灯具) ════════════════ -->
+  <div class="card" id="led-remarks-card" style="display:none">
+    <div class="card-header"><span class="icon">💡</span> LED Remarks &nbsp;<span style="opacity:.7;font-weight:400">LED备注</span></div>
+    <div class="card-body">
+      <div class="fields cols-3">
+        <div class="field">
+          <label>Delivery Time (months) &nbsp;<span class="zh">交货期（月）</span></label>
+          <input type="number" id="led_delivery_months" name="led_delivery_months" min="1" step="1" placeholder="e.g. 2">
+        </div>
+        <div class="field">
+          <label>Deposit % &nbsp;<span class="zh">定金比例</span></label>
+          <input type="number" id="led_deposit_pct" name="led_deposit_pct" min="0" max="100" step="1" placeholder="e.g. 30">
+        </div>
+        <div class="field">
+          <label>Remaining % &nbsp;<span class="zh">尾款比例</span></label>
+          <input type="number" id="led_remaining_pct" name="led_remaining_pct" min="0" max="100" step="1" placeholder="e.g. 70">
+        </div>
+      </div>
+      <div style="margin-top:10px;padding:8px 12px;background:#f0f7ff;border-radius:6px;font-size:12px;color:#555">
+        <strong>Preview:</strong><br>
+        1. The above prices are ex-factory prices.<br>
+        2. Delivery time: <strong style="color:var(--blue)"><span id="led-preview-months">_</span> months</strong> after receipt of <strong style="color:var(--blue)"><span id="led-preview-deposit">_</span>%</strong> deposit.<br>
+        3. The remaining: <strong style="color:var(--blue)"><span id="led-preview-remaining">_</span>%</strong> Will be paid upon delivery.<br>
+        4. Warranty: Bulb-1year.
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 9. Transfer Details ═══════════════════════════════════ -->
+  <div class="card">
+    <div class="card-header"><span class="icon">🏦</span> Transfer Details &nbsp;<span style="opacity:.7;font-weight:400">转账信息</span></div>
+    <div class="card-body">
+      <div class="fields">
+        <div class="field">
+          <label>Select Bank Info &nbsp;<span class="zh">选择银行信息</span></label>
+          <select id="bank-project-select" name="selected_bank_project" class="project-filter" style="max-width:100%">
+            <option value="">-- 请选择项目 / Select Project --</option>
+          </select>
+        </div>
+      </div>
+      <div id="bank-preview" class="bank-preview" style="display:none">
+        <div class="bank-preview-grid">
+          <div class="bank-pv-row"><span class="bank-pv-lbl">Beneficiary:</span><span class="bank-pv-val" data-key="beneficiary"></span></div>
+          <div class="bank-pv-row"><span class="bank-pv-lbl">Bank:</span><span class="bank-pv-val" data-key="bank"></span></div>
+          <div class="bank-pv-row"><span class="bank-pv-lbl">SWIFT:</span><span class="bank-pv-val" data-key="swift"></span></div>
+          <div class="bank-pv-row"><span class="bank-pv-lbl">Account:</span><span class="bank-pv-val" data-key="account"></span></div>
+          <div class="bank-pv-row"><span class="bank-pv-lbl">IBAN:</span><span class="bank-pv-val" data-key="iban"></span></div>
+          <div class="bank-pv-row"><span class="bank-pv-lbl">Bank Address:</span><span class="bank-pv-val" data-key="bank_address"></span></div>
+        </div>
+        <div style="margin-top:10px;display:flex;gap:8px">
+          <button type="button" class="btn-edit-bank" onclick="editBankInfo()">✎ 编辑 / Edit</button>
+          <button type="button" class="btn-del-bank" onclick="deleteBankInfo()" style="display:none">✕ 删除 / Delete</button>
+        </div>
+      </div>
+      <div id="bank-edit-form" class="bank-edit-form" style="display:none">
+        <div class="fields">
+          <div class="field">
+            <label>Project 项目</label>
+            <input type="text" id="bank-edit-project" placeholder="e.g. 卫浴" readonly>
+          </div>
+          <div class="field">
+            <label>Project (EN) 项目英文</label>
+            <input type="text" id="bank-edit-project-en" placeholder="e.g. Sanitary Ware">
+          </div>
+          <div class="field">
+            <label>Beneficiary 收款人</label>
+            <input type="text" id="bank-edit-beneficiary">
+          </div>
+          <div class="field">
+            <label>Bank 银行</label>
+            <input type="text" id="bank-edit-bank">
+          </div>
+          <div class="field">
+            <label>SWIFT</label>
+            <input type="text" id="bank-edit-swift">
+          </div>
+          <div class="field">
+            <label>Account 账号</label>
+            <input type="text" id="bank-edit-account">
+          </div>
+          <div class="field field-full">
+            <label>IBAN</label>
+            <input type="text" id="bank-edit-iban">
+          </div>
+          <div class="field field-full">
+            <label>Bank Address 银行地址</label>
+            <input type="text" id="bank-edit-address">
+          </div>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <button type="button" class="btn-save-bank" onclick="saveBankInfo()">✓ 保存 / Save</button>
+          <button type="button" class="btn-cancel-bank" onclick="cancelEditBank()">取消 / Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ══ Generate ═══════════════════════════════════════════════ -->
   <div class="generate-wrap">
     <button type="submit" id="btn-generate" class="btn-generate">
@@ -324,7 +426,7 @@
     <div class="item-card-header">
       <span class="item-num">Item #1</span>
       <div class="item-header-actions">
-        <button type="button" class="btn-save-product">📌 加入产品库</button>
+<button type="button" class="btn-save-product">📌 加入产品库</button>
         <button type="button" class="btn-remove">✕ 删除</button>
       </div>
     </div>
@@ -340,14 +442,44 @@
         <input type="text" data-fname="item_model" placeholder="e.g. CP-3011">
       </div>
 
-      <div class="field">
-        <label data-for="item_color">Color / Finish &nbsp;<span class="zh">颜色/表面</span></label>
-        <input type="text" data-fname="item_color" placeholder="e.g. White / Matt">
+      <!-- Standard fields (non-LED) -->
+      <div class="item-std-fields">
+        <div class="field">
+          <label data-for="item_color">Color / Finish &nbsp;<span class="zh">颜色/表面</span></label>
+          <input type="text" data-fname="item_color" placeholder="e.g. White / Matt">
+        </div>
+        <div class="field">
+          <label data-for="item_size">Size &nbsp;<span class="zh">尺寸</span></label>
+          <input type="text" data-fname="item_size" placeholder="e.g. 515×350×315 mm">
+        </div>
       </div>
 
-      <div class="field">
-        <label data-for="item_size">Size &nbsp;<span class="zh">尺寸</span></label>
-        <input type="text" data-fname="item_size" placeholder="e.g. 515×350×315 mm">
+      <!-- LED-specific fields (hidden by default) -->
+      <div class="item-led-fields" style="display:none">
+        <div class="field">
+          <label data-for="item_dia_shape">Dia / Shape &nbsp;<span class="zh">直径/形状</span></label>
+          <input type="text" data-fname="item_dia_shape" placeholder="e.g. Ø200mm / Round">
+        </div>
+        <div class="field">
+          <label data-for="item_lumin">Lumin (lm) &nbsp;<span class="zh">光通量</span></label>
+          <input type="text" data-fname="item_lumin" placeholder="e.g. 2400">
+        </div>
+        <div class="field">
+          <label data-for="item_voltage">Voltage &nbsp;<span class="zh">电压</span></label>
+          <input type="text" data-fname="item_voltage" placeholder="e.g. 220-240">
+        </div>
+        <div class="field">
+          <label data-for="item_power">Power &nbsp;<span class="zh">功率</span></label>
+          <input type="text" data-fname="item_power" placeholder="e.g. 24">
+        </div>
+        <div class="field">
+          <label data-for="item_color_temp">Color Temp &nbsp;<span class="zh">色温</span></label>
+          <input type="text" data-fname="item_color_temp" placeholder="e.g. 3000/4000/6000">
+        </div>
+        <div class="field">
+          <label data-for="item_material">Material &nbsp;<span class="zh">材质</span></label>
+          <input type="text" data-fname="item_material" placeholder="e.g. Aluminum + PC">
+        </div>
       </div>
 
       <div class="field">

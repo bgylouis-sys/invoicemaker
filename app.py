@@ -16,6 +16,7 @@ LOGO_DIR        = os.path.join(BASE_DIR, 'logo')
 LOGO_NAMES_PATH = os.path.join(LOGO_DIR, 'names.json')
 CUSTOMERS_PATH  = os.path.join(BASE_DIR, 'customers.json')
 PRODUCTS_PATH   = os.path.join(BASE_DIR, 'products.json')
+BANK_INFO_PATH  = os.path.join(BASE_DIR, 'bank_info.json')
 LOGO_EXTS       = {'.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp'}
 
 ITEMS_START = 17
@@ -74,6 +75,19 @@ def load_products():
 def save_products_file(products):
     with open(PRODUCTS_PATH, 'w', encoding='utf-8') as f:
         json.dump(products, f, ensure_ascii=False, indent=2)
+
+
+# ── Bank info helpers ────────────────────────────────────────────────────────
+
+def load_bank_info():
+    if os.path.exists(BANK_INFO_PATH):
+        with open(BANK_INFO_PATH, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    return []
+
+def save_bank_info_file(data):
+    with open(BANK_INFO_PATH, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
 
 
 # ── Excel helpers ─────────────────────────────────────────────────────────────
@@ -188,6 +202,10 @@ def fill_template(form, files, lang='zh'):
         for i in range(extra):
             copy_row_style(ws, ITEMS_END, insert_at + i)
 
+    # ── Project (global, one per invoice) ───────────────────────────────────
+    project = form.get('project', '').strip()
+    is_led = (project == 'LED灯具')
+
     # ── Fill item rows (rows 17 onward) ──────────────────────────────────────
     for i in range(n):
         r = ITEMS_START + i
@@ -195,8 +213,22 @@ def fill_template(form, files, lang='zh'):
         ws.cell(r, 1).value = i + 1
         ws.cell(r, 2).value = form.get(f'item_desc_{p}',   '')
         ws.cell(r, 3).value = form.get(f'item_model_{p}',  '')
-        ws.cell(r, 5).value = form.get(f'item_color_{p}',  '')
-        ws.cell(r, 6).value = form.get(f'item_size_{p}',   '')
+        if is_led:
+            dia_shape  = form.get(f'item_dia_shape_{p}',  '')
+            lumin      = form.get(f'item_lumin_{p}',      '').rstrip('lm').strip()
+            voltage    = form.get(f'item_voltage_{p}',    '').rstrip('Vv').strip()
+            power      = form.get(f'item_power_{p}',      '').rstrip('Ww').strip()
+            color_temp = form.get(f'item_color_temp_{p}', '').rstrip('Kk').strip()
+            material   = form.get(f'item_material_{p}',   '')
+            ws.cell(r, 4).value = material if material else ''
+            ws.cell(r, 5).value = dia_shape
+            ws.cell(r, 6).value = f'{lumin}lm' if lumin else ''
+            ws.cell(r, 11).value = f'{voltage}V' if voltage else ''
+            ws.cell(r, 12).value = f'{power}W' if power else ''
+            ws.cell(r, 13).value = f'{color_temp}K' if color_temp else ''
+        else:
+            ws.cell(r, 5).value = form.get(f'item_color_{p}',  '')
+            ws.cell(r, 6).value = form.get(f'item_size_{p}',   '')
         ws.cell(r, 7).value = form.get(f'item_unit_{p}',   'Set')
         try:    qty   = float(form.get(f'item_qty_{p}')   or 0)
         except: qty   = 0
@@ -222,11 +254,29 @@ def fill_template(form, files, lang='zh'):
 
     shift = offset - deleted
 
-    # ── Column widths: D(Picture)/K(Packing)/L(MOQ)/M(Lead) removed ──────
-    for col in ('D', 'K', 'L', 'M'):
-        ws.column_dimensions[col].hidden = True
-    for col, w in {'A':4,'B':32,'C':11,'E':11,'F':11,'G':8,'H':7,
-                   'I':12,'J':12,'N':12}.items():
+    # ── Dynamic column headers for LED project (row 16) ──────────────────
+    if is_led:
+        ws.cell(16, 4).value = 'Material'
+        ws.cell(16, 5).value = 'Dia / Shape'
+        ws.cell(16, 6).value = 'Lumin (lm)'
+        ws.cell(16, 11).value = 'Voltage'
+        ws.cell(16, 12).value = 'Power'
+        ws.cell(16, 13).value = 'Color Temp'
+
+    # ── Column widths & orientation ─────────────────────────────────────
+    if is_led:
+        # Landscape for LED: wider columns, all 14 visible
+        ws.page_setup.orientation = 'landscape'
+        for col in ('D', 'K', 'L', 'M'):
+            ws.column_dimensions[col].hidden = False
+        widths = {'A':5,'B':42,'C':14,'D':13,'E':13,'F':13,'G':10,'H':9,
+                  'I':15,'J':15,'K':13,'L':12,'M':13,'N':15}
+    else:
+        for col in ('D', 'K', 'L', 'M'):
+            ws.column_dimensions[col].hidden = True
+        widths = {'A':4,'B':32,'C':11,'E':11,'F':11,'G':8,'H':7,
+                  'I':12,'J':12,'N':12}
+    for col, w in widths.items():
         ws.column_dimensions[col].width = w
 
     # ── Summary rows (Subtotal=22, Freight=23, Grand=24, base) ───────────────
@@ -244,12 +294,53 @@ def fill_template(form, files, lang='zh'):
     ws.cell(gr, 10).value = f'={col_j}{sr}+{col_j}{fr}'
     ws.cell(gr, 14).value = currency
 
-    # ── Sync validity into Remarks item 4 (base row 29) ──────────────────────
-    remarks_row4 = 29 + shift
-    cell_r4 = ws.cell(remarks_row4, 1)
-    if cell_r4.value and '[  ]' in str(cell_r4.value):
-        replacement = validity if validity else '___'
-        cell_r4.value = str(cell_r4.value).replace('[  ]', replacement)
+    # ── Sync validity into Remarks item 4 (base row 29); skip for LED ────
+    if not is_led:
+        remarks_row4 = 29 + shift
+        cell_r4 = ws.cell(remarks_row4, 1)
+        if cell_r4.value and '[  ]' in str(cell_r4.value):
+            replacement = validity if validity else '___'
+            cell_r4.value = str(cell_r4.value).replace('[  ]', replacement)
+
+    # ── LED-specific remarks (replace all standard remarks rows) ───────────
+    if is_led:
+        base = 26 + shift
+        # Unmerge remarks rows before writing
+        for rr in range(base, base + 5):
+            for merged_range in list(ws.merged_cells.ranges):
+                if merged_range.min_row <= rr <= merged_range.max_row:
+                    ws.unmerge_cells(str(merged_range))
+        months = (form.get('led_delivery_months') or '').strip()
+        deposit_pct = (form.get('led_deposit_pct') or '').strip()
+        remaining_pct = (form.get('led_remaining_pct') or '').strip()
+        ws.cell(base,     1).value = '1. The above prices are ex-factory prices.'
+        ws.cell(base + 1, 1).value = f'2. Delivery time: {months} months after receipt of {deposit_pct}% deposit.'
+        ws.cell(base + 2, 1).value = f'3. The remaining: {remaining_pct}% Will be paid upon delivery.'
+        ws.cell(base + 3, 1).value = '4. Warranty: Bulb-1year.'
+        ws.cell(base + 4, 1).value = None  # Clear 5th remark row (LED only has 4)
+        # Merge each LED remark row across all columns
+        for rr in range(base, base + 4):
+            ws.merge_cells(start_row=rr, start_column=1, end_row=rr, end_column=14)
+
+    # ── Bank / transfer details (rows 32-35) ────────────────────────────────
+    bank_project = form.get('selected_bank_project', '').strip()
+    if bank_project:
+        all_banks = load_bank_info()
+        bank = next((b for b in all_banks if b.get('project') == bank_project), None)
+        if bank:
+            br = 32 + shift
+            # Unmerge bank rows first (delete_rows may have corrupted merged ranges)
+            for rr in range(br, br + 4):
+                for merged_range in list(ws.merged_cells.ranges):
+                    if merged_range.min_row <= rr <= merged_range.max_row:
+                        ws.unmerge_cells(str(merged_range))
+            # Now write values safely
+            ws.cell(br,     3).value = bank.get('beneficiary', '')
+            ws.cell(br,    10).value = bank.get('bank', '')
+            ws.cell(br + 1, 3).value = bank.get('swift', '')
+            ws.cell(br + 1,10).value = bank.get('account', '')
+            ws.cell(br + 2, 3).value = bank.get('iban', '')
+            ws.cell(br + 3, 3).value = bank.get('bank_address', '')
 
     # ── Company logo (A1:D2 area) ────────────────────────────────────────────
     selected_logo = form.get('selected_logo_name', '').strip()
@@ -390,19 +481,25 @@ def api_save_product():
         return jsonify({'error': 'Product description required'}), 400
     products = load_products()
     product = {
-        'id':        str(uuid.uuid4()),
-        'project':   data.get('project',   '').strip(),
-        'desc':      data.get('desc',      '').strip(),
-        'model':     data.get('model',     '').strip(),
-        'color':     data.get('color',     '').strip(),
-        'size':      data.get('size',      '').strip(),
-        'unit':      data.get('unit',      'Set').strip(),
-        'price':     data.get('price',     '').strip(),
-        'tax':       data.get('tax',       'excl').strip(),
-        'packing':   data.get('packing',   'Carton').strip(),
-        'moq':       data.get('moq',       '/').strip(),
-        'lead_time': data.get('lead_time', '/').strip(),
-        'remarks':   data.get('remarks',   '/').strip(),
+        'id':         str(uuid.uuid4()),
+        'project':    data.get('project',    '').strip(),
+        'desc':       data.get('desc',       '').strip(),
+        'model':      data.get('model',      '').strip(),
+        'color':      data.get('color',      '').strip(),
+        'size':       data.get('size',       '').strip(),
+        'dia_shape':  data.get('dia_shape',  '').strip(),
+        'lumin':      data.get('lumin',      '').strip(),
+        'voltage':    data.get('voltage',    '').strip(),
+        'power':      data.get('power',      '').strip(),
+        'color_temp': data.get('color_temp', '').strip(),
+        'material':   data.get('material',   '').strip(),
+        'unit':       data.get('unit',       'Set').strip(),
+        'price':      data.get('price',      '').strip(),
+        'tax':        data.get('tax',        'excl').strip(),
+        'packing':    data.get('packing',    'Carton').strip(),
+        'moq':        data.get('moq',        '/').strip(),
+        'lead_time':  data.get('lead_time',  '/').strip(),
+        'remarks':    data.get('remarks',    '/').strip(),
     }
     products.append(product)
     save_products_file(products)
@@ -413,6 +510,52 @@ def api_save_product():
 def api_delete_product(pid):
     products = [p for p in load_products() if p.get('id') != pid]
     save_products_file(products)
+    return jsonify({'ok': True})
+
+
+@app.route('/bank-info')
+def api_bank_info():
+    banks = load_bank_info()
+    project = request.args.get('project', '').strip()
+    if project:
+        banks = [b for b in banks if b.get('project') == project]
+    return jsonify(banks)
+
+
+@app.route('/save-bank-info', methods=['POST'])
+def api_save_bank_info():
+    data = request.get_json() or {}
+    project = data.get('project', '').strip()
+    if not project:
+        return jsonify({'error': 'Project name required'}), 400
+    banks = load_bank_info()
+    existing = next((b for b in banks if b.get('project') == project), None)
+    entry = {
+        'id':           existing['id'] if existing else str(uuid.uuid4()),
+        'project':      project,
+        'project_en':   data.get('project_en', '').strip(),
+        'beneficiary':  data.get('beneficiary', '').strip(),
+        'bank':         data.get('bank', '').strip(),
+        'swift':        data.get('swift', '').strip(),
+        'account':      data.get('account', '').strip(),
+        'iban':         data.get('iban', '').strip(),
+        'bank_address': data.get('bank_address', '').strip(),
+    }
+    if existing:
+        for i, b in enumerate(banks):
+            if b.get('project') == project:
+                banks[i] = entry
+                break
+    else:
+        banks.append(entry)
+    save_bank_info_file(banks)
+    return jsonify(entry)
+
+
+@app.route('/delete-bank-info/<bid>', methods=['DELETE'])
+def api_delete_bank_info(bid):
+    banks = [b for b in load_bank_info() if b.get('id') != bid]
+    save_bank_info_file(banks)
     return jsonify({'ok': True})
 
 
@@ -442,6 +585,9 @@ def preview():
     files = request.files
     n = max(1, int(form.get('item_count') or 1))
 
+    project = form.get('project', '').strip()
+    is_led = (project == 'LED灯具')
+
     items = []
     for i in range(n):
         p = str(i)
@@ -453,18 +599,28 @@ def preview():
         tax_note = 'Incl. 16% GST 含16%消费税' if tax_raw == 'incl' else 'Excl. Tax 不含税'
         remarks  = (form.get(f'item_remarks_{p}') or '/').strip()
         remark_combined = tax_note if remarks == '/' else f'{remarks} [{tax_note}]'
-        items.append({
-            'no':      i + 1,
-            'desc':    form.get(f'item_desc_{p}',    ''),
-            'model':   form.get(f'item_model_{p}',   ''),
-            'color':   form.get(f'item_color_{p}',   ''),
-            'size':    form.get(f'item_size_{p}',    ''),
-            'unit':    form.get(f'item_unit_{p}',    'Set'),
-            'qty':     qty,
-            'price':   price,
-            'amount':  qty * price,
-            'remarks': remark_combined,
-        })
+        item = {
+            'no':       i + 1,
+            'desc':     form.get(f'item_desc_{p}',    ''),
+            'model':    form.get(f'item_model_{p}',   ''),
+            'unit':     form.get(f'item_unit_{p}',    'Set'),
+            'qty':      qty,
+            'price':    price,
+            'amount':   qty * price,
+            'remarks':  remark_combined,
+            'is_led':   is_led,
+        }
+        if is_led:
+            item['dia_shape']  = form.get(f'item_dia_shape_{p}',  '')
+            item['lumin']      = form.get(f'item_lumin_{p}',      '').rstrip('lm').strip()
+            item['voltage']    = form.get(f'item_voltage_{p}',    '').rstrip('Vv').strip()
+            item['power']      = form.get(f'item_power_{p}',      '').rstrip('Ww').strip()
+            item['color_temp'] = form.get(f'item_color_temp_{p}', '').rstrip('Kk').strip()
+            item['material']   = form.get(f'item_material_{p}',   '')
+        else:
+            item['color'] = form.get(f'item_color_{p}', '')
+            item['size']  = form.get(f'item_size_{p}',  '')
+        items.append(item)
 
     try:    freight = float(form.get('freight') or 0)
     except: freight = 0
@@ -550,7 +706,19 @@ def preview():
         'grand':           grand,
         'logo_b64':        logo_b64,
         'logo_mime':       logo_mime,
+        'bank':            None,
+        'is_led':              is_led,
+        'project':             project,
+        'led_delivery_months': form.get('led_delivery_months', '').strip(),
+        'led_deposit_pct':     form.get('led_deposit_pct',     '').strip(),
+        'led_remaining_pct':   form.get('led_remaining_pct',   '').strip(),
     }
+    bank_project = form.get('selected_bank_project', '').strip()
+    if bank_project:
+        all_banks = load_bank_info()
+        bank = next((b for b in all_banks if b.get('project') == bank_project), None)
+        if bank:
+            ctx['bank'] = bank
     template = 'invoice_preview_ar.html' if is_ar else 'invoice_preview.html'
     return render_template(template, **ctx)
 

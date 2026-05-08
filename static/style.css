@@ -818,12 +818,108 @@ body {
   line-height: 1.6;
 }
 
+/* ── Item project selector ───────────────────────────────── */
+.item-project-select {
+  border: 1.5px solid var(--gray-bd);
+  border-radius: 5px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-family: inherit;
+  color: var(--text);
+  background: #fff;
+  cursor: pointer;
+  max-width: 150px;
+  transition: border-color .15s;
+}
+.item-project-select:focus {
+  outline: none;
+  border-color: var(--blue);
+}
+
+/* ── Bank info ───────────────────────────────────────────── */
+.bank-preview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 20px;
+}
+.bank-pv-row {
+  display: flex;
+  gap: 6px;
+  font-size: 13px;
+  padding: 4px 0;
+}
+.bank-pv-lbl {
+  font-weight: 600;
+  color: var(--gray-txt);
+  min-width: 100px;
+  flex-shrink: 0;
+}
+.bank-pv-val {
+  color: var(--text);
+}
+
+.bank-edit-form {
+  margin-top: 14px;
+  padding: 16px;
+  background: #fafbff;
+  border: 1.5px dashed var(--blue);
+  border-radius: var(--radius);
+}
+
+.btn-edit-bank,
+.btn-del-bank {
+  background: var(--blue-lt);
+  border: 1.5px solid var(--blue);
+  color: var(--blue);
+  border-radius: 5px;
+  padding: 5px 14px;
+  font-size: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background .12s;
+}
+.btn-edit-bank:hover,
+.btn-del-bank:hover { background: #d5e3fc; }
+.btn-del-bank { border-color: var(--red); color: var(--red); background: #fff; }
+.btn-del-bank:hover { background: #fef2f2; }
+
+.btn-save-bank,
+.btn-cancel-bank {
+  border: none;
+  border-radius: 5px;
+  padding: 6px 16px;
+  font-size: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background .12s;
+}
+.btn-save-bank {
+  background: var(--blue);
+  color: #fff;
+}
+.btn-save-bank:hover { background: var(--blue-dk); }
+.btn-cancel-bank {
+  background: #e5e7eb;
+  color: var(--gray-txt);
+}
+.btn-cancel-bank:hover { background: #d1d5db; }
+
+/* ── LED fields ───────────────────────────────────────────── */
+.item-led-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px 20px;
+  grid-column: 1 / -1;
+}
+
 /* ── Responsive ──────────────────────────────────────────── */
 @media (max-width: 640px) {
   .fields { grid-template-columns: 1fr; }
   .fields.cols-3 { grid-template-columns: 1fr; }
   .item-card-body { grid-template-columns: 1fr 1fr; }
   .summary-grid { grid-template-columns: 1fr; }
+  .item-led-fields { grid-template-columns: 1fr 1fr; }
+  .bank-preview-grid { grid-template-columns: 1fr; }
   .nav-tab {
     padding: 8px 12px;
     font-size: 11px;

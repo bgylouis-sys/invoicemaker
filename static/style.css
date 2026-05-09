@@ -179,6 +179,7 @@ body {
 }
 
 .logo-option {
+  position: relative;
   border: 2px solid var(--gray-bd);
   border-radius: 8px;
   padding: 10px 12px;
@@ -192,6 +193,13 @@ body {
   min-width: 96px;
   user-select: none;
 }
+.logo-del-btn {
+  position: absolute; top: 2px; right: 4px;
+  background: none; border: none;
+  font-size: 18px; line-height: 1; cursor: pointer;
+  color: #999; padding: 0 2px;
+}
+.logo-del-btn:hover { color: #e00; }
 .logo-option:hover {
   border-color: var(--blue);
   background: var(--blue-lt);

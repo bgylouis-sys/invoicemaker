@@ -17,6 +17,8 @@
             <div class="logo-presets" id="logo-presets">
               {% for logo in logos %}
               <label class="logo-option" data-filename="{{ logo.filename }}">
+                <button type="button" class="logo-del-btn" title="删除 Remove"
+                        onclick="event.stopPropagation();deleteLogo(this, '{{ logo.filename }}')">&times;</button>
                 <img src="/logo/{{ logo.filename }}" alt="{{ logo.display_name }}">
                 <span>{{ logo.display_name }}</span>
               </label>

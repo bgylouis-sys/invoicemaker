@@ -65,14 +65,48 @@ async function uploadNewLogo() {
   }
 }
 
+async function deleteLogo(btn, filename) {
+  if (!confirm(`删除此标志？Delete logo "${filename}"?`)) return;
+
+  try {
+    const res = await fetch('/delete-logo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ filename })
+    });
+    const data = await res.json();
+    if (data.success) {
+      const card = btn.closest('.logo-option');
+      const wasSelected = card.classList.contains('selected');
+      card.remove();
+      if (wasSelected) {
+        const first = document.querySelector('.logo-option');
+        if (first) selectLogoOption(first);
+        else document.getElementById('selected_logo_name').value = '';
+      }
+      showToast('已删除 / Deleted', true);
+    } else {
+      showToast('删除失败 / Delete failed: ' + (data.error || ''));
+    }
+  } catch {
+    showToast('删除失败 / Delete failed');
+  }
+}
+
 function addLogoOptionCard(filename, displayName) {
   const name = displayName || filename.replace(/\.[^.]+$/, '').toUpperCase();
   const container = document.getElementById('logo-presets');
   const label = document.createElement('label');
   label.className = 'logo-option';
   label.dataset.filename = filename;
-  label.innerHTML = `<img src="/logo/${filename}" alt="${name}"><span>${name}</span>`;
-  label.addEventListener('click', () => selectLogoOption(label));
+  label.innerHTML =
+    `<button type="button" class="logo-del-btn" title="删除 Remove"` +
+    ` onclick="event.stopPropagation();deleteLogo(this, '${filename}')">&times;</button>` +
+    `<img src="/logo/${filename}" alt="${name}"><span>${name}</span>`;
+  label.addEventListener('click', (e) => {
+    if (e.target.classList.contains('logo-del-btn')) return;
+    selectLogoOption(label);
+  });
   container.appendChild(label);
   selectLogoOption(label);
 }

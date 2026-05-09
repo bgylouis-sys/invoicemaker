@@ -481,6 +481,23 @@ def upload_logo():
     return jsonify({'filename': filename, 'display_name': display_name})
 
 
+@app.route('/delete-logo', methods=['POST'])
+def delete_logo():
+    filename = (request.form.get('filename') or '').strip()
+    if not filename:
+        return jsonify({'error': 'Filename required'}), 400
+    if '/' in filename or '\\' in filename:
+        return jsonify({'error': 'Invalid filename'}), 400
+    path = os.path.join(LOGO_DIR, filename)
+    if os.path.isfile(path):
+        os.remove(path)
+    names = load_logo_names()
+    if filename in names:
+        del names[filename]
+        save_logo_names(names)
+    return jsonify({'success': True})
+
+
 @app.route('/logo/<path:filename>')
 def serve_logo(filename):
     return send_from_directory(LOGO_DIR, filename)

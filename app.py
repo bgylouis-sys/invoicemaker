@@ -192,15 +192,76 @@ def fill_template(form, files, lang='zh'):
         ws.cell(31, 1).value = 'TRANSFER DETAILS  معلومات التحويل'
         ws.cell(36, 1).value = 'Company Stamp  ختم الشركة:'
 
-    # ── Insert extra item rows if n > 5 ─────────────────────────────────────
+    # ── Insert / delete item rows ─────────────────────────────────────────
+    # openpyxl's insert_rows / delete_rows corrupt merged-cell references,
+    # so we save all merges below the affected area, remove them, perform the
+    # row operation, then re-merge at the correct shifted positions.
     offset = 0
+    deleted = 0
+
+    # Helper: collect merged ranges at or below a given row
+    def _merges_below(ws, start_row):
+        out = []
+        for rng in ws.merged_cells.ranges:
+            if rng.min_row >= start_row:
+                out.append((rng.min_row, rng.max_row, rng.min_col, rng.max_col))
+        return out
+
+    # Helper: remove merged ranges at or below a given row (direct list removal,
+    # no _cells touch — avoids KeyError on orphaned references)
+    def _remove_merges_below(ws, start_row):
+        to_del = [rng for rng in ws.merged_cells.ranges if rng.min_row >= start_row]
+        for rng in to_del:
+            ws.merged_cells.ranges.remove(rng)
+
+    # Helper: re-merge saved ranges after applying a row shift
+    def _reapply_merges(ws, saved, row_shift):
+        for min_r, max_r, min_c, max_c in saved:
+            nr_min = min_r + row_shift
+            nr_max = max_r + row_shift
+            if nr_min >= ITEMS_START:
+                ws.merge_cells(start_row=nr_min, start_column=min_c,
+                               end_row=nr_max, end_column=max_c)
+
     if n > ITEMS_SLOTS:
         extra = n - ITEMS_SLOTS
         offset = extra
         insert_at = ITEMS_END + 1
+
+        saved = _merges_below(ws, insert_at)
+        _remove_merges_below(ws, insert_at)
+
         ws.insert_rows(insert_at, extra)
+
+        # Remove any phantom ranges left at the insertion point
+        stale = [rng for rng in ws.merged_cells.ranges
+                 if insert_at <= rng.min_row < insert_at + extra]
+        for rng in stale:
+            ws.merged_cells.ranges.remove(rng)
+
+        _reapply_merges(ws, saved, extra)
+
         for i in range(extra):
             copy_row_style(ws, ITEMS_END, insert_at + i)
+
+    if n < ITEMS_SLOTS:
+        deleted = ITEMS_SLOTS - n
+        delete_at = ITEMS_START + n
+
+        saved = _merges_below(ws, delete_at)
+        _remove_merges_below(ws, delete_at)
+
+        ws.delete_rows(delete_at, deleted)
+
+        # Remove any phantom ranges left at the deletion point
+        stale = [rng for rng in ws.merged_cells.ranges
+                 if delete_at <= rng.min_row < delete_at + deleted]
+        for rng in stale:
+            ws.merged_cells.ranges.remove(rng)
+
+        _reapply_merges(ws, saved, -deleted)
+
+    shift = offset - deleted
 
     # ── Project (global, one per invoice) ───────────────────────────────────
     project = form.get('project', '').strip()
@@ -244,15 +305,6 @@ def fill_template(form, files, lang='zh'):
             tax_note = 'Incl. 16% GST 含16%消费税' if tax_raw == 'incl' else 'Excl. Tax 不含税'
         remarks  = (form.get(f'item_remarks_{p}') or '/').strip()
         ws.cell(r, 14).value = tax_note if remarks == '/' else f'{remarks} [{tax_note}]'
-
-    # ── Delete unused item rows (so only filled rows show) ───────────────────
-    deleted = 0
-    if n < ITEMS_SLOTS:
-        deleted = ITEMS_SLOTS - n
-        delete_at = ITEMS_START + n
-        ws.delete_rows(delete_at, deleted)
-
-    shift = offset - deleted
 
     # ── Dynamic column headers for LED project (row 16) ──────────────────
     if is_led:

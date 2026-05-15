@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PI — {{ invoice_no }} — {{ customer_name }}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    @page { size: A4 landscape; margin: 6mm; }
+
+    body {
+      font-family: Arial, 'Microsoft YaHei', sans-serif;
+      font-size: 10px;
+      color: #000;
+      background: #fff;
+    }
+
+    .toolbar {
+      position: fixed; top: 0; left: 0; right: 0;
+      background: #000; color: #fff;
+      padding: 8px 16px; display: flex; gap: 10px; align-items: center;
+      z-index: 999; box-shadow: 0 2px 6px rgba(0,0,0,.25);
+    }
+    .toolbar button {
+      background: #fff; color: #000; border: 1px solid #000; border-radius: 4px;
+      padding: 5px 14px; font-size: 12px; font-weight: 700; cursor: pointer;
+    }
+    .toolbar button:hover { background: #eee; }
+    .toolbar span { font-size: 13px; font-weight: 700; }
+    @media print { .toolbar { display: none !important; } body { padding-top: 0 !important; } }
+    body.has-toolbar { padding-top: 44px; }
+
+    .sheet { max-width: 280mm; margin: 0 auto; background: #fff; }
+
+    .inv {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+    .inv td, .inv th {
+      border: 1px solid #000;
+      padding: 3px 4px;
+      vertical-align: middle;
+      overflow: hidden;
+      word-break: break-word;
+      line-height: 1.25;
+      font-size: 10px;
+      color: #000;
+      background: #fff;
+    }
+
+    /* 14-column layout for ceramic tile PI */
+    .inv col.cA  { width: 2.8%; }
+    .inv col.cB  { width: 12.0%; }
+    .inv col.cC  { width: 6.0%; }
+    .inv col.cD  { width: 7.0%; }
+    .inv col.cE  { width: 4.5%; }
+    .inv col.cF  { width: 7.0%; }
+    .inv col.cG  { width: 6.0%; }
+    .inv col.cH  { width: 6.5%; }
+    .inv col.cI  { width: 6.5%; }
+    .inv col.cJ  { width: 5.0%; }
+    .inv col.cK  { width: 6.5%; }
+    .inv col.cL  { width: 8.5%; }
+    .inv col.cM  { width: 8.5%; }
+    .inv col.cN  { width: 13.2%; }
+
+    .r-logo  { height: 28px; }
+    .r-bar   { height: 20px; }
+    .r-info  { height: 19px; }
+    .r-mid   { height: 7px;  }
+    .r-itemh { height: 24px; }
+    .r-item  { height: 24px; }
+    .r-sum   { height: 19px; }
+    .r-grand { height: 26px; }
+    .r-rmk   { height: 16px; }
+    .r-bank  { height: 19px; }
+    .r-stamp { height: 30px; }
+
+    .sh {
+      font-weight: 800;
+      font-size: 12px;
+      letter-spacing: .5px;
+      text-align: center;
+      padding: 3px 6px;
+      border: 2px solid #000 !important;
+    }
+
+    .lbl {
+      font-weight: 600;
+      font-size: 10px;
+      padding-left: 6px;
+      text-align: left;
+      white-space: nowrap;
+    }
+    .val {
+      font-weight: 700;
+      font-size: 11px;
+      padding-left: 6px;
+      text-align: left;
+    }
+
+    .logo-cell {
+      text-align: center;
+      vertical-align: middle;
+      padding: 3px;
+    }
+    .logo-cell img { max-width: 95%; max-height: 52px; object-fit: contain; }
+    .logo-cell .ph { color: #888; font-style: italic; font-size: 10px; }
+
+    .title-cell { text-align: center; vertical-align: middle; }
+    .pi-title {
+      font-size: 26px; font-weight: 800; color: #000;
+      letter-spacing: 4px; line-height: 1.1;
+    }
+    .pi-sub {
+      font-size: 14px; font-weight: 700; color: #333;
+      letter-spacing: 2px;
+    }
+
+    .item-th {
+      font-weight: 800;
+      font-size: 9px;
+      text-align: center;
+      vertical-align: middle;
+      padding: 2px 2px;
+      border: 2px solid #000 !important;
+      line-height: 1.15;
+    }
+
+    .item-td {
+      text-align: center;
+      vertical-align: middle;
+      font-size: 9px;
+      padding: 2px 3px;
+      color: #000;
+    }
+    .item-td.left  { text-align: left; }
+    .item-td.num   { text-align: right; padding-right: 5px; }
+
+    .sum-lbl {
+      font-weight: 600;
+      text-align: left;
+      padding-left: 6px;
+      font-size: 11px;
+    }
+    .sum-val {
+      font-weight: 700;
+      text-align: right;
+      padding-right: 6px;
+      font-size: 12px;
+    }
+    .grand-lbl {
+      font-weight: 800;
+      text-align: center;
+      font-size: 14px;
+      letter-spacing: .6px;
+      border: 2.5px solid #000 !important;
+    }
+    .grand-val {
+      font-weight: 800;
+      text-align: right;
+      padding-right: 6px;
+      font-size: 15px;
+      border: 2.5px solid #000 !important;
+    }
+    .grand-cur {
+      font-weight: 800;
+      text-align: center;
+      font-size: 12px;
+      border: 2.5px solid #000 !important;
+    }
+    .grand-empty { border: 2.5px solid #000 !important; }
+
+    .fixed-text {
+      font-size: 9px;
+      padding: 2px 6px;
+      text-align: left;
+      line-height: 1.35;
+      color: #000;
+    }
+
+    .sign-cell {
+      vertical-align: top;
+      padding: 5px 8px;
+      font-size: 10px;
+      color: #555;
+    }
+  </style>
+</head>
+<body class="has-toolbar">
+
+<div class="toolbar">
+  <span>Ceramic Tile PI Preview — {{ invoice_no }}</span>
+  <button onclick="window.print()">Print / Save PDF</button>
+  <button onclick="window.close()">Close</button>
+</div>
+
+<div class="sheet">
+<table class="inv">
+  <colgroup>
+    <col class="cA"><col class="cB"><col class="cC"><col class="cD">
+    <col class="cE"><col class="cF"><col class="cG"><col class="cH">
+    <col class="cI"><col class="cJ"><col class="cK"><col class="cL">
+    <col class="cM"><col class="cN">
+  </colgroup>
+
+  <!-- ROWS 1-2: Logo + Title -->
+  <tr class="r-logo">
+    <td colspan="4" rowspan="2" class="logo-cell">
+      {% if logo_b64 %}
+        <img src="data:{{ logo_mime }};base64,{{ logo_b64 }}" alt="logo">
+      {% else %}
+        <span class="ph">[ Insert Company Logo ]</span>
+      {% endif %}
+    </td>
+    <td colspan="10" rowspan="2" class="title-cell">
+      <div class="pi-title">{{ invoice_type if invoice_type else 'PROFORMA INVOICE' }}</div>
+      <div class="pi-sub">形式发票</div>
+    </td>
+  </tr>
+  <tr class="r-logo"></tr>
+
+  <!-- ROW 3: Section bars -->
+  <tr class="r-bar">
+    <td colspan="7" class="sh">FROM / SUPPLIER &nbsp; 供货商</td>
+    <td colspan="7" class="sh">INVOICE INFO &nbsp; 发票信息</td>
+  </tr>
+
+  <!-- ROWS 4-8: Supplier + Invoice Info -->
+  <tr class="r-info">
+    <td colspan="2" class="lbl">Company Name:</td>
+    <td colspan="5" class="val">{{ company_name }}</td>
+    <td colspan="3" class="lbl">Invoice No.:</td>
+    <td colspan="4" class="val">{{ invoice_no }}</td>
+  </tr>
+  <tr class="r-info">
+    <td colspan="2" class="lbl">Address:</td>
+    <td colspan="5" class="val">{{ address }}</td>
+    <td colspan="3" class="lbl">Date:</td>
+    <td colspan="4" class="val">{{ date_str }}</td>
+  </tr>
+  <tr class="r-info">
+    <td colspan="2" class="lbl">City / Country:</td>
+    <td colspan="5" class="val">{{ city_country }}</td>
+    <td colspan="3" class="lbl">Currency:</td>
+    <td colspan="4" class="val">{{ currency }}</td>
+  </tr>
+  <tr class="r-info">
+    <td colspan="2" class="lbl">Tel:</td>
+    <td colspan="5" class="val">{{ tel }}</td>
+    <td colspan="3" class="lbl">Incoterms:</td>
+    <td colspan="4" class="val">{{ incoterms }}</td>
+  </tr>
+  <tr class="r-info">
+    <td colspan="2" class="lbl">Email:</td>
+    <td colspan="5" class="val">{{ email }}</td>
+    <td colspan="3" class="lbl">Payment Terms:</td>
+    <td colspan="4" class="val">{{ payment_terms }}</td>
+  </tr>
+
+  <!-- ROW 9: Customer + Quotation bars -->
+  <tr class="r-bar">
+    <td colspan="7" class="sh">TO / CUSTOMER &nbsp; 客户</td>
+    <td colspan="7" class="sh">QUOTATION DETAILS &nbsp; 报价详情</td>
+  </tr>
+
+  <!-- ROWS 10-14: Customer + Quotation Details -->
+  <tr class="r-info">
+    <td colspan="2" class="lbl">Customer Name:</td>
+    <td colspan="5" class="val">{{ customer_name }}</td>
+    <td colspan="3" class="lbl">Contact Person:</td>
+    <td colspan="4" class="val">{{ contact }}</td>
+  </tr>
+  <tr class="r-info">
+    <td colspan="2" class="lbl">Customer Address:</td>
+    <td colspan="5" class="val">{{ customer_address }}</td>
+    <td colspan="3" class="lbl">Project / Inquiry Ref.:</td>
+    <td colspan="4" class="val">{{ inquiry_ref }}</td>
+  </tr>
+  <tr class="r-info">
+    <td colspan="2" class="lbl">Country:</td>
+    <td colspan="5" class="val">{{ country }}</td>
+    <td colspan="3" class="lbl">Lead Time:</td>
+    <td colspan="4" class="val">{{ lead_time }}</td>
+  </tr>
+  <tr class="r-info">
+    <td colspan="2" class="lbl">Customer Tel:</td>
+    <td colspan="5" class="val">{{ customer_tel }}</td>
+    <td colspan="3" class="lbl">Quotation Validity:</td>
+    <td colspan="4" class="val">{% if validity %}{{ validity }} days{% endif %}</td>
+  </tr>
+  <tr class="r-info">
+    <td colspan="2" class="lbl">MOQ:</td>
+    <td colspan="5" class="val">{{ moq }}</td>
+    <td colspan="3" class="lbl">Shipping (Port→Dest):</td>
+    <td colspan="4" class="val">{{ shipping }}</td>
+  </tr>
+
+  <!-- Spacer -->
+  <tr class="r-mid"><td colspan="14"></td></tr>
+
+  <!-- ITEM LIST bar -->
+  <tr class="r-bar">
+    <td colspan="14" class="sh">ITEM LIST &nbsp; 商品明细 — Ceramic Tiles / 瓷砖</td>
+  </tr>
+
+  <!-- Item table headers — tile-specific 14 columns -->
+  <tr class="r-itemh">
+    <th class="item-th">Item<br>No.</th>
+    <th class="item-th">ITEM NO.</th>
+    <th class="item-th">TYPE</th>
+    <th class="item-th">SIZE</th>
+    <th class="item-th">THK<br>(mm)</th>
+    <th class="item-th">BRAND</th>
+    <th class="item-th">M²/CTN</th>
+    <th class="item-th">GW/CTN<br>(kg)</th>
+    <th class="item-th">NW/CTN<br>(kg)</th>
+    <th class="item-th">Unit</th>
+    <th class="item-th">Qty<br>(m²)</th>
+    <th class="item-th">Unit Price<br>USD/m²</th>
+    <th class="item-th">Amount<br>(USD)</th>
+    <th class="item-th">Remarks</th>
+  </tr>
+
+  <!-- Item data rows -->
+  {% for it in items %}
+  <tr class="r-item">
+    <td class="item-td">{{ it.no }}</td>
+    <td class="item-td left">{{ it.model }}</td>
+    <td class="item-td">{{ it.tile_type }}</td>
+    <td class="item-td">{{ it.size }}</td>
+    <td class="item-td">{{ it.thickness }}</td>
+    <td class="item-td">{{ it.brand }}</td>
+    <td class="item-td num">{{ it.m2_per_ctn }}</td>
+    <td class="item-td num">{{ it.gw_per_ctn }}</td>
+    <td class="item-td num">{{ it.nw_per_ctn }}</td>
+    <td class="item-td">{{ it.unit }}</td>
+    <td class="item-td num">{{ "%.0f"|format(it.qty) if it.qty == (it.qty|int) else it.qty }}</td>
+    <td class="item-td num">{{ "%.2f"|format(it.price) }}</td>
+    <td class="item-td num">{{ "%.2f"|format(it.amount) }}</td>
+    <td class="item-td left">{{ it.remarks }}</td>
+  </tr>
+  {% endfor %}
+
+  <!-- Subtotal -->
+  <tr class="r-sum">
+    <td colspan="7"></td>
+    <td colspan="3" class="sum-lbl">Subtotal:</td>
+    <td colspan="4" class="sum-val">{{ "%.2f"|format(subtotal) }}</td>
+  </tr>
+  <!-- Freight -->
+  <tr class="r-sum">
+    <td colspan="7"></td>
+    <td colspan="3" class="sum-lbl">Freight / Additional Charges:</td>
+    <td colspan="4" class="sum-val">{{ "%.2f"|format(freight) }}</td>
+  </tr>
+  <!-- GRAND TOTAL -->
+  <tr class="r-grand">
+    <td colspan="7" class="grand-empty"></td>
+    <td colspan="3" class="grand-lbl">GRAND TOTAL:</td>
+    <td colspan="3" class="grand-val">{{ "%.2f"|format(grand) }}</td>
+    <td class="grand-cur">{{ currency }}</td>
+  </tr>
+
+  <!-- REMARKS -->
+  <tr class="r-bar">
+    <td colspan="14" class="sh">REMARKS &nbsp; 备注</td>
+  </tr>
+  <tr class="r-rmk"><td colspan="14" class="fixed-text">1.&nbsp; The above prices are based on the stated quantity and specifications only.</td></tr>
+  <tr class="r-rmk"><td colspan="14" class="fixed-text">2.&nbsp; Prices may be adjusted if there is any change in quantity, specification, packaging, or surface finish.</td></tr>
+  <tr class="r-rmk"><td colspan="14" class="fixed-text">3.&nbsp; Standard export packing is included unless otherwise specified.</td></tr>
+  <tr class="r-rmk"><td colspan="14" class="fixed-text">4.&nbsp; This quotation is valid for <strong>{{ validity if validity else '___' }}</strong> days from the date of issue.</td></tr>
+  <tr class="r-rmk"><td colspan="14" class="fixed-text">5.&nbsp; Final supply terms shall be subject to order confirmation.</td></tr>
+
+  <!-- TRANSFER DETAILS -->
+  <tr class="r-bar">
+    <td colspan="14" class="sh">TRANSFER DETAILS &nbsp; 转账信息</td>
+  </tr>
+  <tr class="r-bank">
+    <td colspan="2" class="lbl">Beneficiary:</td>
+    <td colspan="5" class="val">{{ bank.beneficiary if bank else '' }}</td>
+    <td colspan="2" class="lbl">Bank:</td>
+    <td colspan="5" class="val">{{ bank.bank if bank else '' }}</td>
+  </tr>
+  <tr class="r-bank">
+    <td colspan="2" class="lbl">SWIFT:</td>
+    <td colspan="5" class="val">{{ bank.swift if bank else '' }}</td>
+    <td colspan="2" class="lbl">Account:</td>
+    <td colspan="5" class="val">{{ bank.account if bank else '' }}</td>
+  </tr>
+  <tr class="r-bank">
+    <td colspan="2" class="lbl">IBAN:</td>
+    <td colspan="12" class="val">{{ bank.iban if bank else '' }}</td>
+  </tr>
+  <tr class="r-bank">
+    <td colspan="2" class="lbl">Bank Address:</td>
+    <td colspan="12" class="val">{{ bank.bank_address if bank else '' }}</td>
+  </tr>
+
+  <!-- Stamp -->
+  <tr class="r-stamp">
+    <td colspan="14" class="sign-cell">Company Stamp &nbsp; 公司印章:</td>
+  </tr>
+  {% if origin_statement %}
+  <tr>
+    <td colspan="14" style="font-weight:700;text-align:center;font-style:italic;padding:8px 12px;font-size:13px">
+      {{ origin_statement }}
+    </td>
+  </tr>
+  {% endif %}
+
+</table>
+</div>
+
+<script>
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      const sheet = document.querySelector('.sheet');
+      if (sheet) {
+        const printableHeightPx = 733; // A4 landscape: 210mm - 12mm margins
+        const contentHeight = sheet.scrollHeight;
+        if (contentHeight > printableHeightPx) {
+          const scale = printableHeightPx / contentHeight;
+          sheet.style.transform = `scale(${scale})`;
+          sheet.style.transformOrigin = 'top left';
+          sheet.style.marginBottom = `${-(contentHeight * (1 - scale))}px`;
+        }
+      }
+      window.print();
+    }, 350);
+  });
+</script>
+</body>
+</html>

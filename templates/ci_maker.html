@@ -1,10 +1,11 @@
 {% extends "base.html" %}
-{% block title %}PI Maker — Proforma Invoice Generator{% endblock %}
+{% block title %}CI Maker — Commercial Invoice Generator{% endblock %}
 {% block content %}
-<script>window.APP_MODE = 'pi';</script>
-<form id="pi-form" method="POST" action="/generate" enctype="multipart/form-data">
+<script>window.APP_MODE = 'ci';</script>
+<form id="ci-form" method="POST" action="/ci/generate" enctype="multipart/form-data">
   <input type="hidden" id="item_count" name="item_count" value="0">
   <input type="hidden" id="form-lang" name="lang" value="zh">
+  <input type="hidden" name="mode" value="ci">
 
   <!-- ══ 1. Supplier Info ════════════════════════════════════════ -->
   <div class="card">
@@ -102,7 +103,6 @@
     <div class="card-header"><span class="icon">🤝</span> Customer Info &nbsp;<span style="opacity:.7;font-weight:400">客户信息</span></div>
     <div class="card-body">
 
-      <!-- Form fields -->
       <div class="fields">
 
         <div class="field">
@@ -399,6 +399,16 @@
     </div>
   </div>
 
+  <!-- ══ 10. Origin Statement (CI only) ═══════════════════════════ -->
+  <div class="card">
+    <div class="card-header"><span class="icon">📜</span> Origin Statement &nbsp;<span style="opacity:.7;font-weight:400">原产地声明</span></div>
+    <div class="card-body">
+      <div style="padding:12px;background:#fefce8;border:1px solid #facc15;border-radius:6px;font-size:13px;line-height:1.6;font-style:italic">
+        STATEMENT : we hereby certify that this invoice is in all respect correct and true both with regard to the price and description of the goods referred herein, and that the country of origin is Jordan
+      </div>
+    </div>
+  </div>
+
   <!-- ══ Generate ═══════════════════════════════════════════════ -->
   <div class="generate-wrap">
     <button type="submit" id="btn-generate" class="btn-generate">
@@ -428,7 +438,7 @@
     <div class="item-card-header">
       <span class="item-num">Item #1</span>
       <div class="item-header-actions">
-<button type="button" class="btn-save-product">📌 加入产品库</button>
+        <button type="button" class="btn-save-product">📌 加入产品库</button>
         <button type="button" class="btn-remove">✕ 删除</button>
       </div>
     </div>

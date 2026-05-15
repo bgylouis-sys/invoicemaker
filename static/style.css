@@ -194,12 +194,15 @@ body {
   user-select: none;
 }
 .logo-del-btn {
-  position: absolute; top: 2px; right: 4px;
-  background: none; border: none;
-  font-size: 18px; line-height: 1; cursor: pointer;
-  color: #999; padding: 0 2px;
+  position: absolute; top: 4px; right: 4px; z-index: 2;
+  width: 20px; height: 20px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,.85); border: none; border-radius: 50%;
+  font-size: 14px; line-height: 1; cursor: pointer;
+  color: #999; padding: 0;
+  transition: color .15s, background .15s;
 }
-.logo-del-btn:hover { color: #e00; }
+.logo-del-btn:hover { color: #fff; background: #e00; }
 .logo-option:hover {
   border-color: var(--blue);
   background: var(--blue-lt);
@@ -920,6 +923,14 @@ body {
   grid-column: 1 / -1;
 }
 
+/* ── Tile fields ──────────────────────────────────────────── */
+.item-tile-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 12px 20px;
+  grid-column: 1 / -1;
+}
+
 /* ── Responsive ──────────────────────────────────────────── */
 @media (max-width: 640px) {
   .fields { grid-template-columns: 1fr; }
@@ -927,6 +938,7 @@ body {
   .item-card-body { grid-template-columns: 1fr 1fr; }
   .summary-grid { grid-template-columns: 1fr; }
   .item-led-fields { grid-template-columns: 1fr 1fr; }
+  .item-tile-fields { grid-template-columns: 1fr 1fr; }
   .bank-preview-grid { grid-template-columns: 1fr; }
   .nav-tab {
     padding: 8px 12px;

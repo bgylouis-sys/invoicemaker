@@ -4,6 +4,13 @@ let itemCount = 0;
 let activeItemCard = null;
 let _productCache = [];
 
+const APP_MODE = window.APP_MODE || 'pi';
+const CFG = APP_MODE === 'ci'
+  ? { formId: 'ci-form', generateUrl: '/ci/generate', previewUrl: '/ci/preview' }
+  : APP_MODE === 'pl'
+    ? { formId: 'pl-form', generateUrl: '/pl/generate', previewUrl: '/pl/preview' }
+    : { formId: 'pi-form', generateUrl: '/generate',      previewUrl: '/preview' };
+
 /* ── Init ────────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
   addItem();
@@ -166,7 +173,7 @@ async function translatePaymentTerms() {
 /* ══ Form submit ═════════════════════════════════════════════ */
 
 function bindForm() {
-  document.getElementById('pi-form').addEventListener('submit', e => {
+  document.getElementById(CFG.formId).addEventListener('submit', e => {
     e.preventDefault();
     if (!validateForm()) return;
     submitForm();
@@ -177,6 +184,7 @@ function bindForm() {
 function bindValiditySync() {
   const inp  = document.getElementById('quotation_validity');
   const hint = document.getElementById('validity-hint');
+  if (!inp || !hint) return;
   inp.addEventListener('input', () => {
     const v = inp.value.trim();
     hint.textContent = v
@@ -321,10 +329,11 @@ function onGlobalProjectChange() {
   const sel = document.getElementById('global-project-select');
   const project = sel ? sel.value : '';
   const isLed = project === 'LED灯具';
+  const isTile = project === '瓷砖';
 
   // Toggle field visibility on ALL existing item cards
   document.querySelectorAll('.item-card').forEach(card => {
-    toggleItemFields(card, isLed);
+    toggleItemFields(card, isLed, isTile);
   });
 
   // Refresh product library filtered by project
@@ -428,12 +437,13 @@ function fillActiveItem(productData) {
   }
   const card = activeItemCard;
   const isLed = productData.project === 'LED灯具';
+  const isTile = productData.project === '瓷砖';
   // Set global project selector
   const globalSel = document.getElementById("global-project-select");
   if (globalSel && productData.project) {
     globalSel.value = productData.project;
   }
-  toggleItemFields(card, isLed);
+  toggleItemFields(card, isLed, isTile);
   const fieldMap = {
     item_desc:    productData.desc,
     item_model:   productData.model,
@@ -450,6 +460,16 @@ function fillActiveItem(productData) {
       item_power:      productData.power,
       item_color_temp: productData.color_temp,
       item_material:   productData.material,
+    });
+  } else if (isTile) {
+    Object.assign(fieldMap, {
+      item_size:        productData.size,
+      item_tile_type:   productData.tile_type,
+      item_thickness:   productData.thickness,
+      item_brand:       productData.brand,
+      item_m2_per_ctn:  productData.m2_per_ctn,
+      item_gw_per_ctn:  productData.gw_per_ctn,
+      item_nw_per_ctn:  productData.nw_per_ctn,
     });
   } else {
     Object.assign(fieldMap, {
@@ -489,6 +509,14 @@ async function saveProductFromCard(card) {
     product.power      = get('item_power');
     product.color_temp = get('item_color_temp');
     product.material   = get('item_material');
+  } else if (project === '瓷砖') {
+    product.size        = get('item_size');
+    product.tile_type   = get('item_tile_type');
+    product.thickness   = get('item_thickness');
+    product.brand       = get('item_brand');
+    product.m2_per_ctn  = get('item_m2_per_ctn');
+    product.gw_per_ctn  = get('item_gw_per_ctn');
+    product.nw_per_ctn  = get('item_nw_per_ctn');
   } else {
     product.color = get('item_color');
     product.size  = get('item_size');
@@ -549,17 +577,34 @@ function addItem(productData = null) {
 
   const qtyEl   = card.querySelector('[data-fname="item_qty"]');
   const priceEl = card.querySelector('[data-fname="item_price"]');
-  [qtyEl, priceEl].forEach(el => el.addEventListener('input', () => {
-    updateCardAmount(card);
-    updateSummary();
-  }));
+  if (APP_MODE === 'pl') {
+    const m2El   = card.querySelector('[data-fname="item_m2_per_ctn"]');
+    const gwEl   = card.querySelector('[data-fname="item_gw_per_ctn"]');
+    const nwEl   = card.querySelector('[data-fname="item_nw_per_ctn"]');
+    const pcsEl  = card.querySelector('[data-fname="item_pcs_per_ctn"]');
+    const sizeEl = card.querySelector('[data-fname="item_carton_size"]');
+    [qtyEl, m2El, gwEl, nwEl, pcsEl, sizeEl].forEach(el => {
+      if (el) el.addEventListener('input', () => {
+        updateCardAmount(card);
+        updateSummary();
+      });
+    });
+  } else {
+    [qtyEl, priceEl].forEach(el => {
+      if (el) el.addEventListener('input', () => {
+        updateCardAmount(card);
+        updateSummary();
+      });
+    });
+  }
 
   document.getElementById('items-container').appendChild(tpl);
 
   // Pre-fill from product library if data provided
   if (productData) {
     const isLed = productData.project === 'LED灯具';
-    toggleItemFields(card, isLed);
+    const isTile = productData.project === '瓷砖';
+    toggleItemFields(card, isLed, isTile);
     const fieldMap = {
       item_desc:    productData.desc,
       item_model:   productData.model,
@@ -576,6 +621,16 @@ function addItem(productData = null) {
         item_power:      productData.power,
         item_color_temp: productData.color_temp,
         item_material:   productData.material,
+      });
+    } else if (isTile) {
+      Object.assign(fieldMap, {
+        item_size:        productData.size,
+        item_tile_type:   productData.tile_type,
+        item_thickness:   productData.thickness,
+        item_brand:       productData.brand,
+        item_m2_per_ctn:  productData.m2_per_ctn,
+        item_gw_per_ctn:  productData.gw_per_ctn,
+        item_nw_per_ctn:  productData.nw_per_ctn,
       });
     } else {
       Object.assign(fieldMap, {
@@ -606,11 +661,15 @@ function setActiveItem(card) {
   card.style.borderRadius = 'var(--radius)';
 }
 
-function toggleItemFields(card, isLed) {
+function toggleItemFields(card, isLed, isTile) {
   const stdFields = card.querySelector('.item-std-fields');
   const ledFields = card.querySelector('.item-led-fields');
-  if (stdFields) stdFields.style.display = isLed ? 'none' : '';
+  const tileFields = card.querySelector('.item-tile-fields');
+  const saniFields = card.querySelector('.item-sanitary-fields');
+  if (stdFields) stdFields.style.display = (isLed || isTile) ? 'none' : '';
   if (ledFields) ledFields.style.display = isLed ? '' : 'none';
+  if (tileFields) tileFields.style.display = isTile ? '' : 'none';
+  if (saniFields) saniFields.style.display = (!isLed && !isTile) ? '' : 'none';
 }
 
 function removeItem(card) {
@@ -633,6 +692,40 @@ function renumberItems() {
 }
 
 function updateCardAmount(card) {
+  if (APP_MODE === 'pl') {
+    const qty = parseFloat(card.querySelector('[data-fname="item_qty"]')?.value) || 0;
+    const gw  = parseFloat(card.querySelector('[data-fname="item_gw_per_ctn"]')?.value) || 0;
+    const nw  = parseFloat(card.querySelector('[data-fname="item_nw_per_ctn"]')?.value) || 0;
+    const project = getGlobalProject();
+    const isTile = project === '瓷砖';
+    let ctns = 0;
+    let cbm = 0;
+
+    if (isTile) {
+      const m2 = parseFloat(card.querySelector('[data-fname="item_m2_per_ctn"]')?.value) || 1;
+      ctns = m2 > 0 ? qty / m2 : 0;
+    } else {
+      const pcsPerCtn = parseFloat(card.querySelector('[data-fname="item_pcs_per_ctn"]')?.value) || 0;
+      ctns = pcsPerCtn > 0 ? qty / pcsPerCtn : 0;
+      // Compute CBM from carton size
+      const sizeStr = card.querySelector('[data-fname="item_carton_size"]')?.value || '';
+      const dims = sizeStr.match(/(\d+\.?\d*)\s*[×xX]\s*(\d+\.?\d*)\s*[×xX]\s*(\d+\.?\d*)/);
+      if (dims) {
+        const volCm3 = parseFloat(dims[1]) * parseFloat(dims[2]) * parseFloat(dims[3]);
+        cbm = ctns * volCm3 / 1000000;
+      }
+      const cbmEl = card.querySelector('.cbm-display');
+      if (cbmEl) cbmEl.textContent = cbm.toFixed(3);
+    }
+
+    card.dataset.ctns     = ctns;
+    card.dataset.total_gw = ctns * gw;
+    card.dataset.total_nw = ctns * nw;
+    card.dataset.cbm      = cbm;
+    const ctnsEl = card.querySelector('.amt-val');
+    if (ctnsEl) ctnsEl.textContent = Math.round(ctns);
+    return;
+  }
   const qty   = parseFloat(card.querySelector('[data-fname="item_qty"]').value)   || 0;
   const price = parseFloat(card.querySelector('[data-fname="item_price"]').value) || 0;
   const amt   = qty * price;
@@ -641,6 +734,10 @@ function updateCardAmount(card) {
 }
 
 function updateSummary() {
+  if (APP_MODE === 'pl') {
+    updatePLSummary();
+    return;
+  }
   let subtotal = 0;
   document.querySelectorAll('.item-card').forEach(card => {
     subtotal += parseFloat(card.dataset.amount || 0);
@@ -653,7 +750,8 @@ function updateSummary() {
 }
 
 function updateCurrencyLabel() {
-  const cur = document.getElementById('currency').value || 'JOD';
+  const el = document.getElementById('currency');
+  const cur = (el && el.value) || 'JOD';
   document.querySelectorAll('.currency-label').forEach(el => el.textContent = cur);
 }
 
@@ -690,9 +788,9 @@ async function submitForm(btnId = 'btn-generate') {
   btn.disabled = true;
   btn.classList.add('loading');
 
-  const formData = new FormData(document.getElementById('pi-form'));
+  const formData = new FormData(document.getElementById(CFG.formId));
   try {
-    const res = await fetch('/generate', { method: 'POST', body: formData });
+    const res = await fetch(CFG.generateUrl, { method: 'POST', body: formData });
     if (!res.ok) {
       let msg = '生成失败 / Generation failed';
       try { const j = await res.json(); msg = j.error || msg; } catch {}
@@ -725,9 +823,9 @@ async function exportPDF(btnId = 'btn-export-pdf') {
   const orig = btn.textContent;
   btn.textContent = '处理中… / Processing…';
 
-  const formData = new FormData(document.getElementById('pi-form'));
+  const formData = new FormData(document.getElementById(CFG.formId));
   try {
-    const res = await fetch('/preview', { method: 'POST', body: formData });
+    const res = await fetch(CFG.previewUrl, { method: 'POST', body: formData });
     if (!res.ok) throw new Error('Preview failed');
     const html = await res.text();
     const win = window.open('', '_blank');
@@ -770,7 +868,70 @@ function formatNum(n) {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+/* ══ Transport Mode (PL Maker) ═══════════════════════════════ */
+
+function onTransportModeChange() {
+  const mode = document.getElementById('transport-mode');
+  if (!mode) return;
+  const isSea = mode.value === 'sea';
+
+  // Update port label
+  const portLabel = document.getElementById('port-label');
+  const portZh = document.getElementById('port-zh');
+  if (portLabel) {
+    portLabel.innerHTML = isSea
+      ? 'Port of Loading &nbsp;<span class="zh" id="port-zh">装运港</span>'
+      : 'Loading Place &nbsp;<span class="zh" id="port-zh">装运地</span>';
+  }
+
+  // Update CTN label in ALL item cards
+  document.querySelectorAll('.item-card').forEach(card => {
+    const ctnLabel = card.querySelector('[data-for="item_ctn_no"]');
+    if (ctnLabel) {
+      ctnLabel.innerHTML = isSea
+        ? 'CTN No. &nbsp;<span class="zh">柜号</span>'
+        : 'Truck Plate &nbsp;<span class="zh">车牌号</span>';
+    }
+  });
+}
+
+/* ── PL Summary (packing-based) ──────────────────────────── */
+function updatePLSummary() {
+  let totalCtns = 0;
+  let totalGw = 0;
+  let totalNw = 0;
+  let totalCbm = 0;
+  document.querySelectorAll('.item-card').forEach(card => {
+    totalCtns += parseFloat(card.dataset.ctns || 0);
+    totalGw   += parseFloat(card.dataset.total_gw || 0);
+    totalNw   += parseFloat(card.dataset.total_nw || 0);
+    totalCbm  += parseFloat(card.dataset.cbm || 0);
+  });
+  const ctnsEl = document.getElementById('display-total-ctns');
+  const gwEl   = document.getElementById('display-total-gw');
+  const nwEl   = document.getElementById('display-total-nw');
+  const cbmEl  = document.getElementById('display-total-cbm');
+  if (ctnsEl) ctnsEl.textContent = Math.round(totalCtns);
+  if (gwEl)   gwEl.textContent   = totalGw.toFixed(2);
+  if (nwEl)   nwEl.textContent   = totalNw.toFixed(2);
+  if (cbmEl)  cbmEl.textContent  = totalCbm.toFixed(3);
+}
+
+function updatePLCardAmounts(card) {
+  const qty = parseFloat(card.querySelector('[data-fname="item_qty"]')?.value) || 0;
+  const m2  = parseFloat(card.querySelector('[data-fname="item_m2_per_ctn"]')?.value) || 1;
+  const gw  = parseFloat(card.querySelector('[data-fname="item_gw_per_ctn"]')?.value) || 0;
+  const nw  = parseFloat(card.querySelector('[data-fname="item_nw_per_ctn"]')?.value) || 0;
+  const ctns = m2 > 0 ? qty / m2 : 0;
+  card.dataset.ctns     = ctns;
+  card.dataset.total_gw = ctns * gw;
+  card.dataset.total_nw = ctns * nw;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('freight')?.addEventListener('input', updateSummary);
   document.getElementById('currency')?.addEventListener('change', updateCurrencyLabel);
+  if (APP_MODE === 'pl') {
+    onTransportModeChange();
+  }
 });

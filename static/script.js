@@ -241,6 +241,23 @@ function onBankProjectChange() {
   }
 }
 
+function onAddBank() {
+  document.getElementById('bank-edit-project').value = '';
+  document.getElementById('bank-edit-project').readOnly = false;
+  document.getElementById('bank-edit-project-en').value = '';
+  document.getElementById('bank-edit-beneficiary').value = '';
+  document.getElementById('bank-edit-bank').value = '';
+  document.getElementById('bank-edit-swift').value = '';
+  document.getElementById('bank-edit-account').value = '';
+  document.getElementById('bank-edit-iban').value = '';
+  document.getElementById('bank-edit-currency').value = '';
+  document.getElementById('bank-edit-address').value = '';
+  document.getElementById('bank-preview').style.display = 'none';
+  document.getElementById('bank-edit-form').style.display = 'block';
+  const delBtn = document.querySelector('.btn-del-bank');
+  if (delBtn) delBtn.style.display = 'none';
+}
+
 function editBankInfo() {
   const project = document.getElementById('bank-project-select').value;
   const bank = project ? _allBanks.find(b => b.project === project) : null;
@@ -251,6 +268,7 @@ function editBankInfo() {
   document.getElementById('bank-edit-swift').value = bank ? (bank.swift || '') : '';
   document.getElementById('bank-edit-account').value = bank ? (bank.account || '') : '';
   document.getElementById('bank-edit-iban').value = bank ? (bank.iban || '') : '';
+  document.getElementById('bank-edit-currency').value = bank ? (bank.currency || '') : '';
   document.getElementById('bank-edit-address').value = bank ? (bank.bank_address || '') : '';
   document.getElementById('bank-edit-project').readOnly = !!bank;
   document.getElementById('bank-preview').style.display = 'none';
@@ -278,6 +296,7 @@ async function saveBankInfo() {
     swift:        document.getElementById('bank-edit-swift').value.trim(),
     account:      document.getElementById('bank-edit-account').value.trim(),
     iban:         document.getElementById('bank-edit-iban').value.trim(),
+    currency:     document.getElementById('bank-edit-currency').value.trim(),
     bank_address: document.getElementById('bank-edit-address').value.trim(),
   };
   try {

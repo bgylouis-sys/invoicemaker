@@ -434,6 +434,10 @@
     <td colspan="12" class="val">{{ bank.iban if bank else 'JO26 UBSI 1150 0002 5019 3398 6151 01' }}</td>
   </tr>
   <tr class="r-bank">
+    <td colspan="2" class="lbl">Currency:</td>
+    <td colspan="12" class="val">{{ bank.currency if bank else 'JOD' }}</td>
+  </tr>
+  <tr class="r-bank">
     <td colspan="2" class="lbl">Bank Address:</td>
     <td colspan="12" class="val">{{ bank.bank_address if bank else 'Bank al Etihad, Al Shmaisani, Headquarters, Amman, Jordan' }}</td>
   </tr>

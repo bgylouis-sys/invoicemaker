@@ -1,24 +1,26 @@
 [
   {
     "id": "sanitary-ware-default",
-    "project": "卫浴",
-    "project_en": "Sanitary Ware",
+    "project": "卫浴JOD",
+    "project_en": "Sanitary Ware JOD",
     "beneficiary": "Jinsheng International Ceramics",
     "bank": "Bank al Etihad",
     "swift": "UBSIJOAX",
     "account": "0250193398615101",
     "iban": "JO26 UBSI 1150 0002 5019 3398 6151 01",
-    "bank_address": "Bank al Etihad, Al Shmaisani, Headquarters, Amman, Jordan"
+    "bank_address": "Bank al Etihad, Al Shmaisani, Headquarters, Amman, Jordan",
+    "currency": "JOD"
   },
   {
     "id": "led-lighting-default",
-    "project": "LED灯具",
-    "project_en": "LED Lighting",
+    "project": "LED灯具JOD",
+    "project_en": "LED Lighting JOD",
     "beneficiary": "JIN CHENG GLOBAL CERAMIC",
     "bank": "Capital Bank of Jordan-Amman-Jordan",
     "swift": "EFBKJOAM",
     "account": "5212528",
     "iban": "JO84EFBK0010000000000004912124",
-    "bank_address": "ID: 2441923 | Details: 1227Corp -Current"
+    "bank_address": "ID: 2441923 | Details: 1227Corp -Current",
+    "currency": "JOD"
   }
 ]

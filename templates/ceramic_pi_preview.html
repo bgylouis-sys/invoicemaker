@@ -394,6 +394,10 @@
     <td colspan="12" class="val">{{ bank.iban if bank else '' }}</td>
   </tr>
   <tr class="r-bank">
+    <td colspan="2" class="lbl">Currency:</td>
+    <td colspan="12" class="val">{{ bank.currency if bank else '' }}</td>
+  </tr>
+  <tr class="r-bank">
     <td colspan="2" class="lbl">Bank Address:</td>
     <td colspan="12" class="val">{{ bank.bank_address if bank else '' }}</td>
   </tr>

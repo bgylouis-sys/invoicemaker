@@ -7,7 +7,7 @@ from copy import copy
 import io, os, re, json, uuid, urllib.request, urllib.parse, base64
 from datetime import date, datetime
 from PIL import Image as PILImage
-from excel_utils import format_invoice_date, shift_item_rows, fill_bank_from_json, insert_image as excel_insert_image
+from excel_utils import format_invoice_date, shift_item_rows, fill_bank_from_json, insert_image as excel_insert_image, auto_fit_worksheet
 
 app = Flask(__name__)
 
@@ -408,7 +408,9 @@ def fill_template(form, files, lang='zh', mode='pi'):
             ws.cell(br,     3).value = bank.get('beneficiary', '')
             ws.cell(br,    10).value = bank.get('bank', '')
             ws.cell(br + 1, 3).value = bank.get('swift', '')
-            ws.cell(br + 1,10).value = bank.get('account', '')
+            acct = bank.get('account', '')
+            curr = bank.get('currency', '')
+            ws.cell(br + 1,10).value = f'{acct} ({curr})' if curr else acct
             ws.cell(br + 2, 3).value = bank.get('iban', '')
             ws.cell(br + 3, 3).value = bank.get('bank_address', '')
 
@@ -436,6 +438,9 @@ def fill_template(form, files, lang='zh', mode='pi'):
     # ── Update print area to reflect new last row ────────────────────────────
     last_row = (37 if mode == 'ci' else 36) + shift
     ws.print_area = f'A1:N{last_row}'
+
+    # ── Auto-fit ────────────────────────────────────────────────────────────────
+    auto_fit_worksheet(ws)
 
     # ── Output ────────────────────────────────────────────────────────────────
     out = io.BytesIO()
@@ -614,6 +619,9 @@ def fill_ceramic_pi(form, files, lang='zh', mode='pi'):
     # Print area
     last_row = (49 if mode == 'ci' else 48) + shift
     ws.print_area = f'A1:N{last_row}'
+
+    # Auto-fit
+    auto_fit_worksheet(ws)
 
     # Output
     out = io.BytesIO()
@@ -1290,6 +1298,9 @@ def fill_pl_template(form, files, lang='zh'):
     last_row = row - 1
     ws.print_area = f'A1:N{last_row}'
 
+    # Auto-fit
+    auto_fit_worksheet(ws)
+
     # Output
     out = io.BytesIO()
     wb.save(out)
@@ -1510,6 +1521,7 @@ def api_save_bank_info():
         'swift':        data.get('swift', '').strip(),
         'account':      data.get('account', '').strip(),
         'iban':         data.get('iban', '').strip(),
+        'currency':     data.get('currency', '').strip(),
         'bank_address': data.get('bank_address', '').strip(),
     }
     if existing:

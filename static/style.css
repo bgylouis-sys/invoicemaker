@@ -894,6 +894,20 @@ body {
 .btn-del-bank { border-color: var(--red); color: var(--red); background: #fff; }
 .btn-del-bank:hover { background: #fef2f2; }
 
+.btn-add-bank {
+  background: #fff;
+  border: 1.5px solid var(--green, #10b981);
+  color: var(--green, #10b981);
+  border-radius: 5px;
+  padding: 7px 14px;
+  font-size: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background .12s;
+}
+.btn-add-bank:hover { background: #ecfdf5; }
+
 .btn-save-bank,
 .btn-cancel-bank {
   border: none;

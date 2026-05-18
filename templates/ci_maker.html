@@ -337,9 +337,12 @@
       <div class="fields">
         <div class="field">
           <label>Select Bank Info &nbsp;<span class="zh">选择银行信息</span></label>
-          <select id="bank-project-select" name="selected_bank_project" class="project-filter" style="max-width:100%">
-            <option value="">-- 请选择项目 / Select Project --</option>
-          </select>
+          <div style="display:flex;gap:8px;align-items:center">
+            <select id="bank-project-select" name="selected_bank_project" class="project-filter" style="max-width:100%;flex:1">
+              <option value="">-- 请选择项目 / Select Project --</option>
+            </select>
+            <button type="button" class="btn-add-bank" onclick="onAddBank()" title="新增银行信息">＋ 新增</button>
+          </div>
         </div>
       </div>
       <div id="bank-preview" class="bank-preview" style="display:none">
@@ -349,6 +352,7 @@
           <div class="bank-pv-row"><span class="bank-pv-lbl">SWIFT:</span><span class="bank-pv-val" data-key="swift"></span></div>
           <div class="bank-pv-row"><span class="bank-pv-lbl">Account:</span><span class="bank-pv-val" data-key="account"></span></div>
           <div class="bank-pv-row"><span class="bank-pv-lbl">IBAN:</span><span class="bank-pv-val" data-key="iban"></span></div>
+          <div class="bank-pv-row"><span class="bank-pv-lbl">Currency:</span><span class="bank-pv-val" data-key="currency"></span></div>
           <div class="bank-pv-row"><span class="bank-pv-lbl">Bank Address:</span><span class="bank-pv-val" data-key="bank_address"></span></div>
         </div>
         <div style="margin-top:10px;display:flex;gap:8px">
@@ -385,6 +389,10 @@
           <div class="field field-full">
             <label>IBAN</label>
             <input type="text" id="bank-edit-iban">
+          </div>
+          <div class="field">
+            <label>Currency 货币</label>
+            <input type="text" id="bank-edit-currency" placeholder="e.g. JOD / USD / EUR">
           </div>
           <div class="field field-full">
             <label>Bank Address 银行地址</label>

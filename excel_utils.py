@@ -10,7 +10,6 @@ from datetime import datetime
 
 import openpyxl
 from openpyxl.drawing.image import Image as XLImage
-from openpyxl.utils import get_column_letter
 from PIL import Image as PILImage
 
 
@@ -182,53 +181,3 @@ def fill_bank_from_json(ws, base_row, bank_dict):
     ws.cell(br + 1,10).value = f'{acct} ({curr})' if curr else acct
     ws.cell(br + 2, 3).value = bank_dict.get('iban', '')
     ws.cell(br + 3, 3).value = bank_dict.get('bank_address', '')
-
-
-# ── Auto-fit columns & rows ──────────────────────────────────────────────────────
-
-def _char_width(ch):
-    """Estimate display width of a character. CJK ~2, others ~1."""
-    cp = ord(ch)
-    if (0x4e00 <= cp <= 0x9fff or 0x3000 <= cp <= 0x303f or
-            0xff00 <= cp <= 0xffef or 0x3400 <= cp <= 0x4dbf):
-        return 2
-    return 1
-
-
-def auto_fit_worksheet(ws, padding_col=2, min_width=3, max_width=60,
-                       min_height=14, max_height=200, line_height=14):
-    """Auto-fit column widths and row heights based on cell content.
-
-    Walks all cells in the sheet, computes max text width per column and
-    max line count per row, then sets dimensions accordingly.
-    """
-    col_max_width = {}
-    row_max_lines = {}
-
-    for row in ws.iter_rows():
-        for cell in row:
-            if cell.value is None:
-                continue
-
-            text = str(cell.value)
-            lines = text.split('\n')
-
-            # Row height: track max line count for this row
-            r = cell.row
-            row_max_lines[r] = max(row_max_lines.get(r, 1), len(lines))
-
-            # Column width: find the longest single line (in display units)
-            col_letter = get_column_letter(cell.column)
-            for line in lines:
-                w = sum(_char_width(ch) for ch in line)
-                col_max_width[col_letter] = max(col_max_width.get(col_letter, 0), w)
-
-    # Apply column widths
-    for col_letter, max_w in col_max_width.items():
-        ws.column_dimensions[col_letter].width = max(min_width,
-                                                     min(max_w + padding_col, max_width))
-
-    # Apply row heights
-    for row_idx, lines in row_max_lines.items():
-        ws.row_dimensions[row_idx].height = max(min_height,
-                                                min(lines * line_height, max_height))

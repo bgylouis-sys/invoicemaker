@@ -7,7 +7,7 @@ from copy import copy
 import io, os, re, json, uuid, urllib.request, urllib.parse, base64
 from datetime import date, datetime
 from PIL import Image as PILImage
-from excel_utils import format_invoice_date, shift_item_rows, fill_bank_from_json, insert_image as excel_insert_image, auto_fit_worksheet
+from excel_utils import format_invoice_date, shift_item_rows, fill_bank_from_json, insert_image as excel_insert_image
 
 app = Flask(__name__)
 
@@ -335,17 +335,17 @@ def fill_template(form, files, lang='zh', mode='pi'):
 
     # ── Column widths & orientation ─────────────────────────────────────
     if is_led:
-        # Landscape for LED: wider columns, all 14 visible
+        # Landscape for LED: match invoice_preview.html CSS widths
         ws.page_setup.orientation = 'landscape'
         for col in ('D', 'K', 'L', 'M'):
             ws.column_dimensions[col].hidden = False
-        widths = {'A':5,'B':42,'C':14,'D':13,'E':13,'F':13,'G':10,'H':9,
-                  'I':15,'J':15,'K':13,'L':12,'M':13,'N':15}
+        widths = {'A':3.33,'B':29,'C':9.17,'D':8.5,'E':7.5,'F':7.5,'G':5.5,'H':5,
+                  'I':9,'J':9,'K':7.5,'L':7.5,'M':7.5,'N':8}
     else:
         for col in ('D', 'K', 'L', 'M'):
             ws.column_dimensions[col].hidden = True
-        widths = {'A':4,'B':32,'C':11,'E':11,'F':11,'G':8,'H':7,
-                  'I':12,'J':12,'N':12}
+        widths = {'A':3.33,'B':26.67,'C':9.17,'E':9.17,'F':9.17,'G':6.67,'H':5.83,
+                  'I':10,'J':10,'N':10}
     for col, w in widths.items():
         ws.column_dimensions[col].width = w
 
@@ -438,9 +438,6 @@ def fill_template(form, files, lang='zh', mode='pi'):
     # ── Update print area to reflect new last row ────────────────────────────
     last_row = (37 if mode == 'ci' else 36) + shift
     ws.print_area = f'A1:N{last_row}'
-
-    # ── Auto-fit ────────────────────────────────────────────────────────────────
-    auto_fit_worksheet(ws)
 
     # ── Output ────────────────────────────────────────────────────────────────
     out = io.BytesIO()
@@ -607,6 +604,12 @@ def fill_ceramic_pi(form, files, lang='zh', mode='pi'):
         ws.cell(origin_row, 1).font = openpyxl.styles.Font(bold=True, italic=True, size=11)
         ws.cell(origin_row, 1).alignment = openpyxl.styles.Alignment(horizontal='center', vertical='center')
 
+    # ── Column widths (match ceramic_pi_preview.html CSS) ───────────────
+    widths = {'A':2.8,'B':12,'C':6,'D':7,'E':4.5,'F':7,'G':6,'H':6.5,
+              'I':6.5,'J':5,'K':6.5,'L':8.5,'M':8.5,'N':13.2}
+    for col, w in widths.items():
+        ws.column_dimensions[col].width = w
+
     # Logo
     selected_logo = form.get('selected_logo_name', '').strip()
     if selected_logo:
@@ -619,9 +622,6 @@ def fill_ceramic_pi(form, files, lang='zh', mode='pi'):
     # Print area
     last_row = (49 if mode == 'ci' else 48) + shift
     ws.print_area = f'A1:N{last_row}'
-
-    # Auto-fit
-    auto_fit_worksheet(ws)
 
     # Output
     out = io.BytesIO()
@@ -1297,9 +1297,6 @@ def fill_pl_template(form, files, lang='zh'):
     # Print area
     last_row = row - 1
     ws.print_area = f'A1:N{last_row}'
-
-    # Auto-fit
-    auto_fit_worksheet(ws)
 
     # Output
     out = io.BytesIO()
